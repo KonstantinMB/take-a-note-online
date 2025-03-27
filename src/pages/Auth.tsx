@@ -33,6 +33,7 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 const Auth = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("login");
   const { login, signup, isAuthenticated } = useAuth();
 
   // Redirect to home if already authenticated
@@ -92,7 +93,8 @@ const Auth = () => {
       }
       
       toast.success("Account created successfully! Please check your email for verification.");
-      navigate("/");
+      // Switch to login tab after successful signup
+      setActiveTab("login");
     } catch (error: any) {
       console.error("Signup error:", error);
       toast.error(error.message || "Failed to create account. Please try again.");
@@ -106,7 +108,7 @@ const Auth = () => {
       <div className="w-full max-w-md p-6 glass-card rounded-xl shadow-md">
         <h1 className="text-2xl font-bold text-center mb-6">Welcome to Notely</h1>
         
-        <Tabs defaultValue="login" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>

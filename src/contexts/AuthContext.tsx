@@ -1,17 +1,18 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Session, User } from "@supabase/supabase-js";
+import { Session, User, AuthError } from "@supabase/supabase-js";
+import { toast } from "sonner";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   login: (email: string, password: string) => Promise<{
-    error: Error | null;
-    data: Session | null;
+    error: AuthError | null;
+    data: { session: Session | null };
   }>;
   signup: (email: string, password: string) => Promise<{
-    error: Error | null;
+    error: AuthError | null;
     data: { user: User | null; session: Session | null };
   }>;
   logout: () => Promise<void>;
@@ -29,8 +30,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          console.log('Auth state changed:', event, newSession?.user?.email);
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
+        } else if (event === 'SIGNED_OUT') {
+          console.log('User signed out');
+          setSession(null);
+          setUser(null);
+        }
       }
     );
 
@@ -47,17 +55,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    return supabase.auth.signInWithPassword({ email, password });
+    try {
+      const response = await supabase.auth.signInWithPassword({ email, password });
+      return {
+        data: { session: response.data.session },
+        error: response.error
+      };
+    } catch (err) {
+      console.error('Login error:', err);
+      return {
+        data: { session: null },
+        error: new AuthError('An unexpected error occurred during login')
+      };
+    }
   };
 
   const signup = async (email: string, password: string) => {
-    return supabase.auth.signUp({ email, password });
+    try {
+      const response = await supabase.auth.signUp({ email, password });
+      return {
+        data: { 
+          user: response.data.user,
+          session: response.data.session
+        },
+        error: response.error
+      };
+    } catch (err) {
+      console.error('Signup error:', err);
+      return {
+        data: { user: null, session: null },
+        error: new AuthError('An unexpected error occurred during signup')
+      };
+    }
   };
 
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
+    toast.success("Logged out successfully");
   };
 
   if (isLoading) {
