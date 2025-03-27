@@ -1,0 +1,103 @@
+
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+
+interface Note {
+  id?: string;
+  title: string;
+  content: string;
+}
+
+interface NoteEditorProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (note: Note) => void;
+  note?: Note;
+}
+
+const NoteEditor = ({ isOpen, onClose, onSave, note }: NoteEditorProps) => {
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (note) {
+      setTitle(note.title);
+      setContent(note.content);
+    } else {
+      setTitle("");
+      setContent("");
+    }
+  }, [note, isOpen]);
+
+  const handleSave = async () => {
+    if (!title.trim()) {
+      toast.error("Please add a title to your note");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await onSave({
+        id: note?.id,
+        title: title.trim(),
+        content: content.trim(),
+      });
+      
+      toast.success(note?.id ? "Note updated" : "Note created");
+      onClose();
+    } catch (error) {
+      toast.error("Failed to save note");
+      console.error(error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-2">
+          <DialogTitle className="text-xl font-medium">
+            {note?.id ? "Edit Note" : "Create Note"}
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="px-6 py-4 flex flex-col gap-4">
+          <div className="space-y-2">
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Note title"
+              className="text-lg font-medium border-none shadow-none focus-visible:ring-0 px-0 input-focused"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Write your note here..."
+              className="min-h-[200px] resize-none border-none shadow-none focus-visible:ring-0 px-0 input-focused"
+            />
+          </div>
+        </div>
+        
+        <DialogFooter className="px-6 py-4 border-t">
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save Note"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default NoteEditor;
