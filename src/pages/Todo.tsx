@@ -81,7 +81,7 @@ const TodoPage = () => {
         .insert({
           text: newTodoText.trim(),
           completed: false,
-          user_id: user.email
+          user_id: user.id // Use user.id instead of user.email
         })
         .select();
 

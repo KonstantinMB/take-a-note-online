@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, FileText, Search } from "lucide-react";
@@ -152,7 +151,7 @@ const Notes = () => {
           .insert({
             title: note.title,
             content: note.content,
-            user_id: user.email
+            user_id: user.id
           })
           .select();
 
