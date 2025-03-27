@@ -1,12 +1,17 @@
 
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { FileText, CheckSquare, Home } from "lucide-react";
+import { FileText, CheckSquare, Home, LogIn, LogOut, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
+  const { user, logout, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,6 +21,12 @@ const Navbar = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleLogout = () => {
+    logout();
+    toast.success("Logged out successfully");
+    navigate("/");
+  };
 
   const navItems = [
     { name: "Home", path: "/", icon: Home },
@@ -55,6 +66,36 @@ const Navbar = () => {
               </Link>
             ))}
           </nav>
+          
+          <div className="flex items-center space-x-2">
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <div className="hidden md:flex items-center mr-2">
+                  <User className="h-4 w-4 mr-1" />
+                  <span className="text-sm font-medium">{user?.email}</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="flex items-center"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  <span className="hidden md:inline">Logout</span>
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/auth")}
+                className="flex items-center"
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                <span className="hidden md:inline">Login</span>
+              </Button>
+            )}
+          </div>
           
           <div className="md:hidden flex items-center">
             <div className="flex space-x-1">
