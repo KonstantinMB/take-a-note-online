@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Navbar from "./components/Navbar";
 import { AuthProvider } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -26,8 +27,16 @@ const App = () => (
             <main className="flex-1">
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/notes" element={<Notes />} />
-                <Route path="/todo" element={<Todo />} />
+                <Route path="/notes" element={
+                  <ProtectedRoute>
+                    <Notes />
+                  </ProtectedRoute>
+                } />
+                <Route path="/todo" element={
+                  <ProtectedRoute>
+                    <Todo />
+                  </ProtectedRoute>
+                } />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

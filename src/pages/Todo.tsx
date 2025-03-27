@@ -7,12 +7,15 @@ import { Plus, CheckSquare, LayoutList } from "lucide-react";
 import TodoItem from "@/components/TodoItem";
 import EmptyState from "@/components/EmptyState";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface Todo {
   id: string;
   text: string;
   completed: boolean;
-  createdAt: string;
+  created_at: string;
 }
 
 const TodoPage = () => {
@@ -20,35 +23,46 @@ const TodoPage = () => {
   const [newTodoText, setNewTodoText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect to auth page if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, navigate]);
 
   // Fetch todos
   useEffect(() => {
-    // Placeholder for Supabase integration
     const fetchTodos = async () => {
       try {
-        // This would be replaced with Supabase query
-        setTimeout(() => {
-          // Sample data
-          const sampleTodos = [
-            {
-              id: "1",
-              text: "Welcome to your to-do list! Add your first task below.",
-              completed: false,
-              createdAt: new Date().toISOString(),
-            }
-          ];
-          setTodos(sampleTodos);
-          setIsLoading(false);
-        }, 500);
+        setIsLoading(true);
+        
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from("todos")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          throw error;
+        }
+
+        setTodos(data || []);
       } catch (error) {
         console.error("Error fetching todos:", error);
         toast.error("Failed to load tasks");
+      } finally {
         setIsLoading(false);
       }
     };
 
-    fetchTodos();
-  }, []);
+    if (user) {
+      fetchTodos();
+    }
+  }, [user]);
 
   const filteredTodos = todos.filter(todo => {
     if (filter === "active") return !todo.completed;
@@ -59,18 +73,26 @@ const TodoPage = () => {
   const handleAddTodo = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newTodoText.trim()) return;
+    if (!newTodoText.trim() || !user) return;
     
     try {
-      // This would be replaced with Supabase insert
-      const newTodo = {
-        id: Date.now().toString(),
-        text: newTodoText.trim(),
-        completed: false,
-        createdAt: new Date().toISOString(),
-      };
+      const { data, error } = await supabase
+        .from("todos")
+        .insert({
+          text: newTodoText.trim(),
+          completed: false,
+          user_id: user.email
+        })
+        .select();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        setTodos(prev => [data[0], ...prev]);
+      }
       
-      setTodos(prev => [newTodo, ...prev]);
       setNewTodoText("");
       toast.success("Task added");
     } catch (error) {
@@ -81,7 +103,21 @@ const TodoPage = () => {
 
   const handleToggleTodo = async (id: string) => {
     try {
-      // This would be replaced with Supabase update
+      const todoToUpdate = todos.find(todo => todo.id === id);
+      if (!todoToUpdate) return;
+
+      const { error } = await supabase
+        .from("todos")
+        .update({
+          completed: !todoToUpdate.completed,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", id);
+
+      if (error) {
+        throw error;
+      }
+
       setTodos(prevTodos =>
         prevTodos.map(todo =>
           todo.id === id
@@ -97,7 +133,15 @@ const TodoPage = () => {
 
   const handleDeleteTodo = async (id: string) => {
     try {
-      // This would be replaced with Supabase delete
+      const { error } = await supabase
+        .from("todos")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        throw error;
+      }
+
       setTodos(prevTodos => prevTodos.filter(todo => todo.id !== id));
       toast.success("Task deleted");
     } catch (error) {
@@ -108,7 +152,18 @@ const TodoPage = () => {
 
   const handleEditTodo = async (id: string, text: string) => {
     try {
-      // This would be replaced with Supabase update
+      const { error } = await supabase
+        .from("todos")
+        .update({
+          text,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", id);
+
+      if (error) {
+        throw error;
+      }
+
       setTodos(prevTodos =>
         prevTodos.map(todo =>
           todo.id === id
@@ -123,13 +178,28 @@ const TodoPage = () => {
     }
   };
 
-  const handleClearCompleted = () => {
-    const hasCompleted = todos.some(todo => todo.completed);
+  const handleClearCompleted = async () => {
+    const completedTodoIds = todos
+      .filter(todo => todo.completed)
+      .map(todo => todo.id);
     
-    if (hasCompleted) {
-      // This would be replaced with Supabase delete
+    if (completedTodoIds.length === 0) return;
+    
+    try {
+      const { error } = await supabase
+        .from("todos")
+        .delete()
+        .in("id", completedTodoIds);
+
+      if (error) {
+        throw error;
+      }
+
       setTodos(prevTodos => prevTodos.filter(todo => !todo.completed));
       toast.success("Completed tasks cleared");
+    } catch (error) {
+      console.error("Error clearing completed todos:", error);
+      toast.error("Failed to clear completed tasks");
     }
   };
 
@@ -154,7 +224,7 @@ const TodoPage = () => {
           placeholder="Add a new task..."
           className="input-focused"
         />
-        <Button type="submit" disabled={!newTodoText.trim()}>
+        <Button type="submit" disabled={!newTodoText.trim() || !user}>
           <Plus className="h-4 w-4 mr-2" />
           Add
         </Button>
@@ -235,7 +305,7 @@ const TodoPage = () => {
                     placeholder="Add a new task..."
                     className="input-focused"
                   />
-                  <Button type="submit" disabled={!newTodoText.trim()}>
+                  <Button type="submit" disabled={!newTodoText.trim() || !user}>
                     Add
                   </Button>
                 </form>

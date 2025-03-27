@@ -8,12 +8,15 @@ import NoteCard from "@/components/NoteCard";
 import NoteEditor from "@/components/NoteEditor";
 import EmptyState from "@/components/EmptyState";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface Note {
   id: string;
   title: string;
   content: string;
-  createdAt: string;
+  created_at: string;
 }
 
 const Notes = () => {
@@ -23,36 +26,47 @@ const Notes = () => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [currentNote, setCurrentNote] = useState<Note | undefined>();
   const [isLoading, setIsLoading] = useState(true);
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect to auth page if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, navigate]);
 
   // Fetch notes
   useEffect(() => {
-    // Placeholder for Supabase integration
     const fetchNotes = async () => {
       try {
-        // This would be replaced with Supabase query
-        setTimeout(() => {
-          // Sample data
-          const sampleNotes = [
-            {
-              id: "1",
-              title: "Welcome to Notely",
-              content: "This is a sample note to get you started. Create your first note by clicking the + button in the top right corner.",
-              createdAt: new Date().toISOString(),
-            }
-          ];
-          setNotes(sampleNotes);
-          setFilteredNotes(sampleNotes);
-          setIsLoading(false);
-        }, 500);
+        setIsLoading(true);
+        
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from("notes")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          throw error;
+        }
+
+        setNotes(data || []);
+        setFilteredNotes(data || []);
       } catch (error) {
         console.error("Error fetching notes:", error);
         toast.error("Failed to load notes");
+      } finally {
         setIsLoading(false);
       }
     };
 
-    fetchNotes();
-  }, []);
+    if (user) {
+      fetchNotes();
+    }
+  }, [user]);
 
   // Filter notes based on search query
   useEffect(() => {
@@ -83,7 +97,15 @@ const Notes = () => {
 
   const handleDeleteNote = async (id: string) => {
     try {
-      // This would be replaced with Supabase delete
+      const { error } = await supabase
+        .from("notes")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        throw error;
+      }
+
       setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
       toast.success("Note deleted");
     } catch (error) {
@@ -93,25 +115,60 @@ const Notes = () => {
   };
 
   const handleSaveNote = async (note: { id?: string; title: string; content: string }) => {
-    // This would be replaced with Supabase create/update
-    if (note.id) {
-      // Update existing note
-      setNotes(prevNotes =>
-        prevNotes.map(n =>
-          n.id === note.id
-            ? { ...n, title: note.title, content: note.content }
-            : n
-        )
-      );
-    } else {
-      // Create new note
-      const newNote = {
-        id: Date.now().toString(),
-        title: note.title,
-        content: note.content,
-        createdAt: new Date().toISOString(),
-      };
-      setNotes(prevNotes => [newNote, ...prevNotes]);
+    try {
+      if (!user) {
+        toast.error("You must be logged in to save notes");
+        return;
+      }
+
+      if (note.id) {
+        // Update existing note
+        const { error } = await supabase
+          .from("notes")
+          .update({
+            title: note.title,
+            content: note.content,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", note.id);
+
+        if (error) {
+          throw error;
+        }
+
+        setNotes(prevNotes =>
+          prevNotes.map(n =>
+            n.id === note.id
+              ? { ...n, title: note.title, content: note.content }
+              : n
+          )
+        );
+        
+        toast.success("Note updated");
+      } else {
+        // Create new note
+        const { data, error } = await supabase
+          .from("notes")
+          .insert({
+            title: note.title,
+            content: note.content,
+            user_id: user.email
+          })
+          .select();
+
+        if (error) {
+          throw error;
+        }
+
+        if (data && data.length > 0) {
+          setNotes(prevNotes => [data[0], ...prevNotes]);
+        }
+        
+        toast.success("Note created");
+      }
+    } catch (error) {
+      console.error("Error saving note:", error);
+      toast.error("Failed to save note");
     }
   };
 
@@ -148,7 +205,7 @@ const Notes = () => {
                 id={note.id}
                 title={note.title}
                 content={note.content}
-                createdAt={note.createdAt}
+                createdAt={note.created_at}
                 onEdit={handleEditNote}
                 onDelete={handleDeleteNote}
               />

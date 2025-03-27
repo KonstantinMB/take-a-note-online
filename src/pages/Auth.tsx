@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { LogIn, UserPlus } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Define form schemas
 const loginSchema = z.object({
@@ -32,6 +33,14 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 const Auth = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const { login, signup, isAuthenticated } = useAuth();
+
+  // Redirect to home if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/");
+    }
+  }, [isAuthenticated, navigate]);
 
   // Login form
   const loginForm = useForm<LoginFormValues>({
@@ -56,16 +65,17 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
-      // For demo purposes, we'll just simulate a successful login
-      console.log("Login values:", values);
+      const { error } = await login(values.email, values.password);
       
-      // Mock successful login
-      localStorage.setItem("user", JSON.stringify({ email: values.email }));
+      if (error) {
+        throw error;
+      }
+      
       toast.success("Logged in successfully!");
       navigate("/");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
-      toast.error("Failed to login. Please try again.");
+      toast.error(error.message || "Failed to login. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -75,16 +85,17 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
-      // For demo purposes, we'll just simulate a successful signup
-      console.log("Signup values:", values);
+      const { error } = await signup(values.email, values.password);
       
-      // Mock successful signup and login
-      localStorage.setItem("user", JSON.stringify({ email: values.email }));
-      toast.success("Account created successfully!");
+      if (error) {
+        throw error;
+      }
+      
+      toast.success("Account created successfully! Please check your email for verification.");
       navigate("/");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Signup error:", error);
-      toast.error("Failed to create account. Please try again.");
+      toast.error(error.message || "Failed to create account. Please try again.");
     } finally {
       setIsLoading(false);
     }
