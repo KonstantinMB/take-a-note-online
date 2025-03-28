@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { format, parseISO, isToday, isYesterday } from "date-fns";
 
 interface Todo {
   id: string;
@@ -17,6 +19,17 @@ interface Todo {
   completed: boolean;
   created_at: string;
 }
+
+const getDateGroup = (dateString: string): string => {
+  const date = parseISO(dateString);
+  if (isToday(date)) {
+    return "Today";
+  } else if (isYesterday(date)) {
+    return "Yesterday";
+  } else {
+    return format(date, "EEEE, MMMM d, yyyy");
+  }
+};
 
 const TodoPage = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -67,6 +80,26 @@ const TodoPage = () => {
     if (filter === "active") return !todo.completed;
     if (filter === "completed") return todo.completed;
     return true;
+  });
+
+  const groupedTodos = filteredTodos.reduce<{[key: string]: Todo[]}>((groups, todo) => {
+    const dateGroup = getDateGroup(todo.created_at);
+    if (!groups[dateGroup]) {
+      groups[dateGroup] = [];
+    }
+    groups[dateGroup].push(todo);
+    return groups;
+  }, {});
+
+  const sortedDateGroups = Object.keys(groupedTodos).sort((a, b) => {
+    if (a === "Today") return -1;
+    if (b === "Today") return 1;
+    if (a === "Yesterday") return -1;
+    if (b === "Yesterday") return 1;
+    
+    const dateA = parseISO(groupedTodos[a][0].created_at);
+    const dateB = parseISO(groupedTodos[b][0].created_at);
+    return dateB.getTime() - dateA.getTime();
   });
 
   const handleAddTodo = async (e: React.FormEvent) => {
@@ -264,17 +297,26 @@ const TodoPage = () => {
         </div>
       ) : filteredTodos.length > 0 ? (
         <ScrollArea className="h-[calc(100vh-280px)]">
-          <div className="space-y-2">
-            {filteredTodos.map((todo) => (
-              <TodoItem
-                key={todo.id}
-                id={todo.id}
-                text={todo.text}
-                completed={todo.completed}
-                onToggle={handleToggleTodo}
-                onDelete={handleDeleteTodo}
-                onEdit={handleEditTodo}
-              />
+          <div className="space-y-4">
+            {sortedDateGroups.map((dateGroup) => (
+              <div key={dateGroup} className="space-y-2">
+                <h3 className="text-sm font-medium text-gray-500 py-1 sticky top-0 bg-white z-10 border-b">
+                  {dateGroup}
+                </h3>
+                <div className="space-y-2">
+                  {groupedTodos[dateGroup].map((todo) => (
+                    <TodoItem
+                      key={todo.id}
+                      id={todo.id}
+                      text={todo.text}
+                      completed={todo.completed}
+                      onToggle={handleToggleTodo}
+                      onDelete={handleDeleteTodo}
+                      onEdit={handleEditTodo}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
           
