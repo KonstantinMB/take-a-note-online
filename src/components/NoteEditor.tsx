@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -89,7 +90,7 @@ const NoteEditor = ({ isOpen, onClose, onSave, note, categories = [] }: NoteEdit
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Note title"
-              className="text-lg font-medium px-3 py-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-lg font-medium px-3 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
             />
           </div>
           
@@ -98,7 +99,7 @@ const NoteEditor = ({ isOpen, onClose, onSave, note, categories = [] }: NoteEdit
               value={selectedCategory || undefined}
               onValueChange={setSelectedCategory}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full border border-gray-300 focus:ring-2 focus:ring-blue-500 transition-all duration-200">
                 <SelectValue>
                   {currentCategory ? (
                     <div className="flex items-center">
@@ -124,7 +125,7 @@ const NoteEditor = ({ isOpen, onClose, onSave, note, categories = [] }: NoteEdit
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Write your note here..."
-              className="min-h-[200px] resize-none border rounded-md shadow-none focus-visible:ring-0 px-3 py-2 input-focused"
+              className="min-h-[200px] resize-none border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
             />
           </div>
         </div>
@@ -143,3 +144,4 @@ const NoteEditor = ({ isOpen, onClose, onSave, note, categories = [] }: NoteEdit
 };
 
 export default NoteEditor;
+
