@@ -106,7 +106,7 @@ const Auth = () => {
   return (
     <div className="page-container flex items-center justify-center min-h-[calc(100vh-4rem)]">
       <div className="w-full max-w-md p-6 glass-card rounded-xl shadow-md">
-        <h1 className="text-2xl font-bold text-center mb-6">Welcome to Notely</h1>
+        <h1 className="text-2xl font-bold text-center mb-6">Welcome to TakeANote</h1>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
