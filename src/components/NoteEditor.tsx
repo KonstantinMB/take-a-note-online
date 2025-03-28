@@ -144,4 +144,3 @@ const NoteEditor = ({ isOpen, onClose, onSave, note, categories = [] }: NoteEdit
 };
 
 export default NoteEditor;
-

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Edit, Trash, Check } from "lucide-react";
@@ -39,12 +40,21 @@ const NoteCard = ({
     
   const formattedDate = formatDistanceToNow(new Date(createdAt), { addSuffix: true });
   
-  const handleDelete = () => {
+  const handleDelete = (e: React.MouseEvent) => {
+    // Stop propagation to prevent opening the editor when deleting
+    e.stopPropagation();
+    
     if (showDeleteConfirm) {
       onDelete(id);
     } else {
       setShowDeleteConfirm(true);
     }
+  };
+  
+  // Handler for clicking on the edit button
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent the parent onClick from triggering
+    onEdit(id);
   };
   
   return (
@@ -56,7 +66,7 @@ const NoteCard = ({
       className={cn(
         "note-card bg-white rounded-lg shadow-sm p-4 border border-gray-100",
         "transform transition-all duration-200 ease-in-out",
-        "hover:shadow-md hover:border-gray-200",
+        "hover:shadow-md hover:border-gray-200 cursor-pointer",
         isHovering ? "scale-[1.02]" : "scale-100"
       )}
       onMouseEnter={() => setIsHovering(true)}
@@ -64,6 +74,7 @@ const NoteCard = ({
         setIsHovering(false);
         setShowDeleteConfirm(false);
       }}
+      onClick={() => onEdit(id)} // Add onClick to make entire card clickable
       layout
     >
       <div className="flex flex-col gap-3">
@@ -89,7 +100,7 @@ const NoteCard = ({
                 <motion.button 
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => onEdit(id)}
+                  onClick={handleEditClick}
                   className="p-1.5 rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
                 >
                   <Edit className="h-4 w-4" />
