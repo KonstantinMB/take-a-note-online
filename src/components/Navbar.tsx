@@ -44,25 +44,26 @@ const Navbar = () => {
   return (
     <header className="border-b border-gray-100 bg-white">
       <div className="container max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-8">
-          <Link to="/" className="font-medium text-xl">
+        <div className="flex items-center">
+          <Link to="/" className="font-medium text-xl mr-8">
             TakeANote
           </Link>
 
           {!isMobile && (
-            <NavigationMenu>
-              <NavigationMenuList>
+            <NavigationMenu className="mx-auto">
+              <NavigationMenuList className="flex gap-2">
                 {navLinks.map((link) => (
                   <NavigationMenuItem key={link.href}>
                     <NavigationMenuLink
                       asChild
                       className={cn(
                         navigationMenuTriggerStyle(),
+                        "flex items-center px-4",
                         isActive(link.href) &&
                           "bg-accent text-accent-foreground"
                       )}
                     >
-                      <Link to={link.href}>
+                      <Link to={link.href} className="flex items-center">
                         <link.icon className="h-4 w-4 mr-2" />
                         {link.label}
                       </Link>
@@ -89,14 +90,14 @@ const Navbar = () => {
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-48" align="end" forceMount>
-                <DropdownMenuItem asChild>
-                  <span className="font-medium cursor-default">
+              <DropdownMenuContent className="w-auto min-w-[200px]" align="end" forceMount>
+                <DropdownMenuItem className="px-3 py-2 cursor-default">
+                  <span className="text-sm font-medium truncate max-w-[240px] block overflow-hidden">
                     {user?.email}
                   </span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout}>
+                <DropdownMenuItem onClick={logout} className="px-3 py-2">
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -112,6 +113,7 @@ const Navbar = () => {
               variant="ghost"
               size="icon"
               onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="ml-2"
             >
               {showMobileMenu ? (
                 <X className="h-6 w-6" />
