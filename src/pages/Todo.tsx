@@ -10,12 +10,17 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { format, isToday, isYesterday } from "date-fns";
 
 interface Todo {
   id: string;
   text: string;
   completed: boolean;
   created_at: string;
+}
+
+interface GroupedTodos {
+  [date: string]: Todo[];
 }
 
 const TodoPage = () => {
@@ -67,6 +72,48 @@ const TodoPage = () => {
     if (filter === "active") return !todo.completed;
     if (filter === "completed") return todo.completed;
     return true;
+  });
+
+  const groupedTodos = filteredTodos.reduce((groups: GroupedTodos, todo) => {
+    const date = new Date(todo.created_at);
+    let dateString: string;
+    
+    if (isToday(date)) {
+      dateString = "Today";
+    } else if (isYesterday(date)) {
+      dateString = "Yesterday";
+    } else {
+      dateString = format(date, "MMMM d, yyyy");
+    }
+    
+    if (!groups[dateString]) {
+      groups[dateString] = [];
+    }
+    
+    groups[dateString].push(todo);
+    return groups;
+  }, {});
+
+  const sortedDates = Object.keys(groupedTodos).sort((a, b) => {
+    if (a === "Today") return -1;
+    if (b === "Today") return 1;
+    
+    if (a === "Yesterday" && b !== "Today") return -1;
+    if (b === "Yesterday" && a !== "Today") return 1;
+    
+    const dateA = a === "Today" 
+      ? new Date() 
+      : a === "Yesterday" 
+        ? new Date(new Date().setDate(new Date().getDate() - 1))
+        : new Date(a);
+        
+    const dateB = b === "Today" 
+      ? new Date() 
+      : b === "Yesterday" 
+        ? new Date(new Date().setDate(new Date().getDate() - 1))
+        : new Date(b);
+        
+    return dateB.getTime() - dateA.getTime();
   });
 
   const handleAddTodo = async (e: React.FormEvent) => {
@@ -262,21 +309,26 @@ const TodoPage = () => {
         <div className="flex justify-center items-center py-20">
           <div className="animate-pulse text-gray-400">Loading tasks...</div>
         </div>
-      ) : filteredTodos.length > 0 ? (
+      ) : Object.keys(groupedTodos).length > 0 ? (
         <ScrollArea className="h-[calc(100vh-280px)]">
-          <div className="space-y-2">
-            {filteredTodos.map((todo) => (
-              <TodoItem
-                key={todo.id}
-                id={todo.id}
-                text={todo.text}
-                completed={todo.completed}
-                onToggle={handleToggleTodo}
-                onDelete={handleDeleteTodo}
-                onEdit={handleEditTodo}
-              />
-            ))}
-          </div>
+          {sortedDates.map(date => (
+            <div key={date} className="mb-6">
+              <h2 className="text-sm font-medium text-gray-500 mb-2">{date}</h2>
+              <div className="space-y-2">
+                {groupedTodos[date].map((todo) => (
+                  <TodoItem
+                    key={todo.id}
+                    id={todo.id}
+                    text={todo.text}
+                    completed={todo.completed}
+                    onToggle={handleToggleTodo}
+                    onDelete={handleDeleteTodo}
+                    onEdit={handleEditTodo}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
           
           <div className="mt-4 text-sm text-gray-500 text-center py-2">
             {todos.filter(t => !t.completed).length} tasks left
