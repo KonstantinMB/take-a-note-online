@@ -1,8 +1,9 @@
 
 import { useState } from "react";
-import { Tag, ChevronRight, ChevronDown, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import CategoryBadge from "@/components/CategoryBadge";
+import { Badge } from "@/components/ui/badge";
+import { ChevronRight, ChevronDown, Plus } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Category {
   id: string;
@@ -14,70 +15,87 @@ interface CategoryFilterProps {
   categories: Category[];
   selectedCategory: string | null;
   setSelectedCategory: (categoryId: string | null) => void;
-  onAddCategoryClick: () => void;
+  onAddCategory: () => void;
 }
 
 const CategoryFilter = ({
   categories,
   selectedCategory,
   setSelectedCategory,
-  onAddCategoryClick
+  onAddCategory
 }: CategoryFilterProps) => {
-  const [showCategories, setShowCategories] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
-  const clearCategoryFilter = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedCategory(null);
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  const handleCategoryClick = (categoryId: string | null) => {
+    setSelectedCategory(categoryId);
   };
 
   return (
     <div className="mb-6">
-      <div 
-        className="flex items-center mb-2 cursor-pointer" 
-        onClick={() => setShowCategories(!showCategories)}
-      >
-        <Tag className="h-4 w-4 mr-2 text-gray-500" />
-        <span className="text-sm font-medium text-gray-700">Categories</span>
-        {showCategories ? (
-          <ChevronDown className="h-4 w-4 ml-1 text-gray-500" />
-        ) : (
-          <ChevronRight className="h-4 w-4 ml-1 text-gray-500" />
-        )}
+      <div className="flex items-center justify-between mb-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="p-0 h-auto hover:bg-transparent"
+          onClick={toggleExpand}
+        >
+          <div className="flex items-center text-sm font-medium text-gray-700">
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4 mr-1" />
+            ) : (
+              <ChevronRight className="h-4 w-4 mr-1" />
+            )}
+            Categories
+          </div>
+        </Button>
         
-        {selectedCategory && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={clearCategoryFilter} 
-            className="ml-2 h-6 px-2 text-xs"
-          >
-            <X className="h-3 w-3 mr-1" />
-            Clear filter
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="p-1 h-auto hover:bg-gray-100 rounded-full"
+          onClick={onAddCategory}
+        >
+          <Plus className="h-4 w-4 text-gray-600" />
+        </Button>
       </div>
-      
-      {showCategories && (
-        <div className="flex flex-wrap gap-2 ml-6 mt-2 mb-2">
-          {categories.map(category => (
-            <CategoryBadge
-              key={category.id}
-              name={category.name}
-              color={category.color}
-              className={selectedCategory === category.id ? "ring-2 ring-black/20" : "opacity-80 hover:opacity-100"}
-              onClick={() => setSelectedCategory(prev => prev === category.id ? null : category.id)}
-            />
-          ))}
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-7 px-2 rounded-full"
-            onClick={onAddCategoryClick}
-          >
-            <Plus className="h-3 w-3" />
-          </Button>
-        </div>
+
+      {isExpanded && (
+        <ScrollArea className="max-h-36">
+          <div className="flex flex-wrap gap-2 mt-2">
+            <Badge
+              variant="outline"
+              className={`cursor-pointer hover:bg-gray-100 ${
+                selectedCategory === null ? "bg-gray-100 border-gray-300" : ""
+              }`}
+              style={{ backgroundColor: selectedCategory === null ? "#f3f4f6" : undefined }}
+              onClick={() => handleCategoryClick(null)}
+            >
+              All
+            </Badge>
+            
+            {categories.map((category) => (
+              <Badge
+                key={category.id}
+                variant="outline"
+                className={`cursor-pointer hover:opacity-90 ${
+                  selectedCategory === category.id ? "border-gray-300" : ""
+                }`}
+                style={{
+                  backgroundColor: category.color,
+                  color: "#444",
+                  borderColor: selectedCategory === category.id ? "#d1d5db" : "transparent"
+                }}
+                onClick={() => handleCategoryClick(category.id)}
+              >
+                {category.name}
+              </Badge>
+            ))}
+          </div>
+        </ScrollArea>
       )}
     </div>
   );
