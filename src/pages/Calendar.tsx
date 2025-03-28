@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, parseISO, startOfDay } from "date-fns";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -43,7 +43,6 @@ const CalendarPage = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // Fetch events
   useEffect(() => {
     fetchEvents();
   }, [user, currentDate]);
@@ -54,10 +53,6 @@ const CalendarPage = () => {
     setIsLoading(true);
     
     try {
-      // Fetch events for the whole month
-      const startDate = startOfMonth(currentDate);
-      const endDate = endOfMonth(currentDate);
-      
       const { data, error } = await supabase
         .from("calendar_events")
         .select("*")
@@ -86,7 +81,6 @@ const CalendarPage = () => {
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
     
-    // Always open the sheet on mobile or the modal on desktop
     if (isMobile) {
       setIsSheetOpen(true);
     } else {
@@ -112,7 +106,6 @@ const CalendarPage = () => {
       if (!user) return;
 
       if (selectedEvent) {
-        // Update existing event
         const { error } = await supabase
           .from("calendar_events")
           .update({
@@ -129,7 +122,6 @@ const CalendarPage = () => {
         if (error) throw error;
         toast.success("Event updated successfully");
       } else {
-        // Create new event
         const { error } = await supabase
           .from("calendar_events")
           .insert({
@@ -146,9 +138,7 @@ const CalendarPage = () => {
         toast.success("Event added to calendar");
       }
       
-      // Refresh events
       fetchEvents();
-      
     } catch (error) {
       console.error("Error saving event:", error);
       toast.error("Failed to save event");
@@ -166,7 +156,6 @@ const CalendarPage = () => {
         
       if (error) throw error;
       
-      // Update UI by removing the deleted event
       setEvents(events.filter(e => e.id !== selectedEvent.id));
       toast.success("Event removed from calendar");
     } catch (error) {
@@ -176,9 +165,11 @@ const CalendarPage = () => {
   };
 
   const getEventsForDate = (date: Date) => {
+    const normalizedDate = startOfDay(date);
+    
     return events.filter(event => {
-      const eventDate = parseISO(event.start_time);
-      return isSameDay(eventDate, date);
+      const eventDate = startOfDay(parseISO(event.start_time));
+      return isSameDay(eventDate, normalizedDate);
     });
   };
 
@@ -226,9 +217,7 @@ const CalendarPage = () => {
           </Button>
         </div>
         
-        {/* Calendar grid */}
         <div className="grid grid-cols-7 gap-1">
-          {/* Day names */}
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
             <div 
               key={day} 
@@ -238,7 +227,6 @@ const CalendarPage = () => {
             </div>
           ))}
           
-          {/* Calendar days */}
           {daysInMonth.map((day, index) => {
             const dayEvents = getEventsForDate(day);
             const isToday = isSameDay(day, new Date());
@@ -252,7 +240,7 @@ const CalendarPage = () => {
                   "transition-colors cursor-pointer",
                   isToday ? "bg-blue-50" : isCurrentMonth ? "bg-white" : "bg-gray-50 opacity-70",
                   "hover:border-blue-300 hover:shadow-md hover:bg-blue-50/50",
-                  "relative" // Added to position the click indicator
+                  "relative"
                 )}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -261,7 +249,6 @@ const CalendarPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2, delay: index * 0.01 }}
               >
-                {/* Click indicator - small dot to show day is clickable */}
                 <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-400 rounded-full opacity-50"></div>
                 
                 <div className="flex flex-col h-full">
@@ -280,7 +267,7 @@ const CalendarPage = () => {
                           className={cn(
                             "text-xs px-2 py-1 rounded-md text-white truncate",
                             "border-l-2",
-                            "hover:ring-1 hover:ring-offset-1 hover:ring-opacity-50", // Added to show interactivity
+                            "hover:ring-1 hover:ring-offset-1 hover:ring-opacity-50",
                             event.color ? colorVariants[event.color] : colorVariants.default
                           )}
                           onClick={(e) => handleEventClick(e, event)}
@@ -302,7 +289,6 @@ const CalendarPage = () => {
         </div>
       </div>
 
-      {/* Loading and empty states */}
       {isLoading && (
         <div className="flex justify-center items-center py-10">
           <div className="animate-pulse text-gray-400">Loading events...</div>
@@ -324,7 +310,6 @@ const CalendarPage = () => {
         />
       )}
       
-      {/* Event Modal (for desktop) */}
       <EventModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -334,7 +319,6 @@ const CalendarPage = () => {
         selectedEvent={selectedEvent}
       />
 
-      {/* Day Events Sheet (for mobile and as a day view) */}
       <DayEventsSheet
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}

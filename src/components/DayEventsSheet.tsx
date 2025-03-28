@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { format, isSameDay, parseISO } from "date-fns";
+import { format, isSameDay, parseISO, startOfDay } from "date-fns";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -48,10 +48,16 @@ const DayEventsSheet = ({
       console.log("Filtering events for date:", selectedDate);
       console.log("Available events:", events);
       
+      // Convert selectedDate to start of day to avoid time issues in comparison
+      const normalizedSelectedDate = startOfDay(selectedDate);
+      
       const filteredEvents = events.filter(event => {
-        const eventDate = parseISO(event.start_time);
-        const result = isSameDay(eventDate, selectedDate);
-        console.log(`Event ${event.title} on ${eventDate} matches selected date ${selectedDate}: ${result}`);
+        // Parse the event date and normalize to start of day
+        const eventDate = startOfDay(parseISO(event.start_time));
+        
+        // Compare the dates after normalizing both to start of day
+        const result = isSameDay(eventDate, normalizedSelectedDate);
+        console.log(`Event ${event.title} on ${eventDate} matches selected date ${normalizedSelectedDate}: ${result}`);
         return result;
       });
       
