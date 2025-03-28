@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, parseISO } from "date-fns";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -9,9 +9,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import EventModal from "@/components/EventModal";
+import DayEventsSheet from "@/components/DayEventsSheet";
 import EmptyState from "@/components/EmptyState";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CalendarEvent {
   id: string;
@@ -29,10 +31,12 @@ const CalendarPage = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -42,37 +46,35 @@ const CalendarPage = () => {
 
   // Fetch events
   useEffect(() => {
-    const fetchEvents = async () => {
-      if (!user) return;
-
-      setIsLoading(true);
-      
-      try {
-        const startDate = startOfMonth(currentDate);
-        const endDate = endOfMonth(currentDate);
-        
-        const { data, error } = await supabase
-          .from("calendar_events")
-          .select("*")
-          .gte("start_time", startDate.toISOString())
-          .lte("start_time", endDate.toISOString())
-          .order("start_time", { ascending: true });
-        
-        if (error) throw error;
-        
-        setEvents(data || []);
-      } catch (error) {
-        console.error("Error fetching calendar events:", error);
-        toast.error("Failed to load calendar events");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    if (user) {
-      fetchEvents();
-    }
+    fetchEvents();
   }, [user, currentDate]);
+
+  const fetchEvents = async () => {
+    if (!user) return;
+
+    setIsLoading(true);
+    
+    try {
+      const startDate = startOfMonth(currentDate);
+      const endDate = endOfMonth(currentDate);
+      
+      const { data, error } = await supabase
+        .from("calendar_events")
+        .select("*")
+        .gte("start_time", startDate.toISOString())
+        .lte("start_time", endDate.toISOString())
+        .order("start_time", { ascending: true });
+      
+      if (error) throw error;
+      
+      setEvents(data || []);
+    } catch (error) {
+      console.error("Error fetching calendar events:", error);
+      toast.error("Failed to load calendar events");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const daysInMonth = eachDayOfInterval({
     start: startOfMonth(currentDate),
@@ -84,15 +86,25 @@ const CalendarPage = () => {
   
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
-    setSelectedEvent(null);
-    setIsModalOpen(true);
+    
+    if (isMobile) {
+      setIsSheetOpen(true);
+    } else {
+      setSelectedEvent(null);
+      setIsModalOpen(true);
+    }
   };
   
   const handleEventClick = (e: React.MouseEvent, event: CalendarEvent) => {
     e.stopPropagation();
     setSelectedEvent(event);
     setSelectedDate(parseISO(event.start_time));
-    setIsModalOpen(true);
+    
+    if (isMobile) {
+      setIsSheetOpen(true);
+    } else {
+      setIsModalOpen(true);
+    }
   };
 
   const handleSaveEvent = async (eventData: any) => {
@@ -135,15 +147,7 @@ const CalendarPage = () => {
       }
       
       // Refresh events
-      const { data, error } = await supabase
-        .from("calendar_events")
-        .select("*")
-        .gte("start_time", startOfMonth(currentDate).toISOString())
-        .lte("start_time", endOfMonth(currentDate).toISOString())
-        .order("start_time", { ascending: true });
-      
-      if (error) throw error;
-      setEvents(data || []);
+      fetchEvents();
       
     } catch (error) {
       console.error("Error saving event:", error);
@@ -199,20 +203,25 @@ const CalendarPage = () => {
         </Button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-soft p-6 mb-6">
+      <div className="bg-white rounded-xl shadow-soft p-4 sm:p-6 mb-6">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
             <Button variant="ghost" size="icon" onClick={previousMonth}>
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <h2 className="text-xl font-medium px-2">
+            <h2 className="text-lg sm:text-xl font-medium px-2">
               {format(currentDate, 'MMMM yyyy')}
             </h2>
             <Button variant="ghost" size="icon" onClick={nextMonth}>
               <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => setCurrentDate(new Date())}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setCurrentDate(new Date())}
+            className="hidden sm:flex"
+          >
             Today
           </Button>
         </div>
@@ -221,8 +230,11 @@ const CalendarPage = () => {
         <div className="grid grid-cols-7 gap-1">
           {/* Day names */}
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <div key={day} className="h-10 flex items-center justify-center font-medium text-sm text-gray-500">
-              {day}
+            <div 
+              key={day} 
+              className="h-8 sm:h-10 flex items-center justify-center font-medium text-xs sm:text-sm text-gray-500"
+            >
+              {isMobile ? day.charAt(0) : day}
             </div>
           ))}
           
@@ -236,7 +248,7 @@ const CalendarPage = () => {
               <motion.div
                 key={day.toString()}
                 className={cn(
-                  "min-h-[100px] p-1 border border-gray-100 rounded-md",
+                  "min-h-[80px] sm:min-h-[100px] p-1 border border-gray-100 rounded-md",
                   "transition-colors cursor-pointer",
                   isToday ? "bg-blue-50" : isCurrentMonth ? "bg-white" : "bg-gray-50 opacity-70",
                   "hover:border-blue-300 hover:shadow-sm"
@@ -250,7 +262,7 @@ const CalendarPage = () => {
               >
                 <div className="flex flex-col h-full">
                   <div className={cn(
-                    "text-sm font-medium mb-1 p-1 rounded-full w-7 h-7 flex items-center justify-center",
+                    "text-xs sm:text-sm font-medium mb-1 p-1 rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center",
                     isToday ? "bg-blue-500 text-white" : "text-gray-700"
                   )}>
                     {format(day, 'd')}
@@ -258,7 +270,7 @@ const CalendarPage = () => {
                   
                   <ScrollArea className="flex-1 h-full" type="always">
                     <div className="space-y-1">
-                      {dayEvents.map((event) => (
+                      {dayEvents.slice(0, isMobile ? 2 : 3).map((event) => (
                         <div 
                           key={event.id}
                           className={cn(
@@ -271,6 +283,11 @@ const CalendarPage = () => {
                           {event.title}
                         </div>
                       ))}
+                      {dayEvents.length > (isMobile ? 2 : 3) && (
+                        <div className="text-xs px-2 py-1 text-gray-500 font-medium">
+                          +{dayEvents.length - (isMobile ? 2 : 3)} more
+                        </div>
+                      )}
                     </div>
                   </ScrollArea>
                 </div>
@@ -301,6 +318,7 @@ const CalendarPage = () => {
         />
       )}
       
+      {/* Event Modal (for desktop) */}
       <EventModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -308,6 +326,16 @@ const CalendarPage = () => {
         onDelete={handleDeleteEvent}
         selectedDate={selectedDate}
         selectedEvent={selectedEvent}
+      />
+
+      {/* Day Events Sheet (for mobile and as a day view) */}
+      <DayEventsSheet
+        isOpen={isSheetOpen}
+        onClose={() => setIsSheetOpen(false)}
+        selectedDate={selectedDate}
+        events={events}
+        onEventUpdate={fetchEvents}
+        userId={user?.id}
       />
     </div>
   );
