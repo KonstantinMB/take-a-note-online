@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,8 +143,7 @@ const TodoPage = () => {
       setNewTodoText("");
       toast.success("Task added");
       
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 100);
+      // Removed confetti trigger from here
     } catch (error) {
       console.error("Error adding todo:", error);
       toast.error("Failed to add task");
@@ -174,6 +174,12 @@ const TodoPage = () => {
             : todo
         )
       );
+      
+      // Only trigger confetti when marking a todo as completed
+      if (!todoToUpdate.completed) {
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 100);
+      }
     } catch (error) {
       console.error("Error toggling todo:", error);
       toast.error("Failed to update task");
@@ -376,3 +382,4 @@ const TodoPage = () => {
 };
 
 export default TodoPage;
+
