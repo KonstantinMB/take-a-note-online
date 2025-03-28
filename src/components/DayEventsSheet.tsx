@@ -1,6 +1,6 @@
+
 import { useState, useEffect } from "react";
 import { format, isSameDay, parseISO, startOfDay } from "date-fns";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CalendarIcon, Clock, Plus } from "lucide-react";
@@ -8,6 +8,21 @@ import { cn } from "@/lib/utils";
 import EventModal from "./EventModal";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { 
+  Drawer, 
+  DrawerClose, 
+  DrawerContent, 
+  DrawerHeader, 
+  DrawerTitle 
+} from "@/components/ui/drawer";
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetHeader, 
+  SheetTitle 
+} from "@/components/ui/sheet";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface CalendarEvent {
   id: string;
@@ -40,17 +55,11 @@ const DayEventsSheet = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [dayEvents, setDayEvents] = useState<CalendarEvent[]>([]);
-
-  useEffect(() => {
-    console.log("DayEventsSheet received isOpen prop:", isOpen);
-  }, [isOpen]);
+  const isMobile = useIsMobile();
 
   // Filter events for the selected date whenever selectedDate or events change
   useEffect(() => {
     if (selectedDate && events && events.length > 0) {
-      console.log("Filtering events for date:", selectedDate);
-      console.log("Available events:", events);
-      
       // Convert selectedDate to start of day to avoid time issues in comparison
       const normalizedSelectedDate = startOfDay(selectedDate);
       
@@ -59,9 +68,7 @@ const DayEventsSheet = ({
         const eventDate = startOfDay(parseISO(event.start_time));
         
         // Compare the dates after normalizing both to start of day
-        const result = isSameDay(eventDate, normalizedSelectedDate);
-        console.log(`Event ${event.title} on ${eventDate} matches selected date ${normalizedSelectedDate}: ${result}`);
-        return result;
+        return isSameDay(eventDate, normalizedSelectedDate);
       });
       
       // Sort events by time
@@ -71,7 +78,6 @@ const DayEventsSheet = ({
         return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
       });
       
-      console.log("Filtered events:", filteredEvents);
       setDayEvents(filteredEvents);
     } else {
       setDayEvents([]);
@@ -166,94 +172,119 @@ const DayEventsSheet = ({
     default: "bg-gray-500 border-gray-600 text-white"
   };
 
-  console.log("DayEventsSheet - selectedDate:", selectedDate);
-  console.log("DayEventsSheet - dayEvents:", dayEvents);
-
-  // Debug rendering
-  console.log("Sheet is open:", isOpen);
-  console.log("Number of events to display:", dayEvents.length);
-
-  return (
+  const renderEventsList = () => (
     <>
-      <Sheet open={isOpen} onOpenChange={(open) => {
-        console.log("Sheet open state changed to:", open);
-        if (!open) onClose();
-      }}>
-        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
-          <SheetHeader className="mb-6">
-            <SheetTitle className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5" />
-              {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Events'}
-            </SheetTitle>
-          </SheetHeader>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-sm font-medium text-gray-500">
+          {dayEvents.length === 0 ? 'No events scheduled' : 
+            `${dayEvents.length} event${dayEvents.length !== 1 ? 's' : ''}`}
+        </h3>
+        <Button size="sm" onClick={handleAddNewEvent} className="bg-blue-500 hover:bg-blue-600">
+          <Plus className="h-4 w-4 mr-1" />
+          Add Event
+        </Button>
+      </div>
 
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-sm font-medium text-gray-500">
-              {dayEvents.length === 0 ? 'No events scheduled' : 
-                `${dayEvents.length} event${dayEvents.length !== 1 ? 's' : ''}`}
-            </h3>
-            <Button size="sm" onClick={handleAddNewEvent} className="bg-blue-500 hover:bg-blue-600">
-              <Plus className="h-4 w-4 mr-1" />
-              Add Event
-            </Button>
-          </div>
-
-          <ScrollArea className="h-[calc(100vh-180px)]">
-            <div className="space-y-3 pr-4">
-              {dayEvents.length > 0 ? (
-                dayEvents.map((event) => (
-                  <div 
-                    key={event.id}
-                    className={cn(
-                      "p-3 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-all",
-                      "transform hover:scale-[1.02] active:scale-[0.98]",
-                      event.color ? colorVariants[event.color] : colorVariants.default
-                    )}
-                    onClick={() => handleEventClick(event)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <h4 className="font-medium">{event.title}</h4>
-                    </div>
-                    
-                    <div className="mt-2 flex items-center text-sm opacity-90">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {event.is_all_day ? (
-                        'All day'
-                      ) : (
-                        <>
-                          {format(new Date(event.start_time), 'h:mm a')}
-                          {event.end_time && (
-                            <> - {format(new Date(event.end_time), 'h:mm a')}</>
-                          )}
-                        </>
-                      )}
-                    </div>
-                    
-                    {event.description && (
-                      <p className="mt-2 text-sm opacity-90 line-clamp-2">
-                        {event.description}
-                      </p>
+      <ScrollArea className="h-[calc(100vh-180px)]">
+        <AnimatePresence>
+          <div className="space-y-3 pr-4">
+            {dayEvents.length > 0 ? (
+              dayEvents.map((event, index) => (
+                <motion.div 
+                  key={event.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2, delay: index * 0.05 }}
+                  className={cn(
+                    "p-3 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-all",
+                    "transform hover:scale-[1.02] active:scale-[0.98]",
+                    event.color ? colorVariants[event.color] : colorVariants.default
+                  )}
+                  onClick={() => handleEventClick(event)}
+                >
+                  <div className="flex justify-between items-start">
+                    <h4 className="font-medium">{event.title}</h4>
+                  </div>
+                  
+                  <div className="mt-2 flex items-center text-sm opacity-90">
+                    <Clock className="h-3 w-3 mr-1" />
+                    {event.is_all_day ? (
+                      'All day'
+                    ) : (
+                      <>
+                        {format(new Date(event.start_time), 'h:mm a')}
+                        {event.end_time && (
+                          <> - {format(new Date(event.end_time), 'h:mm a')}</>
+                        )}
+                      </>
                     )}
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <CalendarIcon className="h-10 w-10 mx-auto text-gray-400 mb-2" />
-                  <p className="text-gray-500">No events for this day</p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={handleAddNewEvent}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Event
-                  </Button>
-                </div>
-              )}
+                  
+                  {event.description && (
+                    <p className="mt-2 text-sm opacity-90 line-clamp-2">
+                      {event.description}
+                    </p>
+                  )}
+                </motion.div>
+              ))
+            ) : (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-8"
+              >
+                <CalendarIcon className="h-10 w-10 mx-auto text-gray-400 mb-2" />
+                <p className="text-gray-500">No events for this day</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-4"
+                  onClick={handleAddNewEvent}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Event
+                </Button>
+              </motion.div>
+            )}
+          </div>
+        </AnimatePresence>
+      </ScrollArea>
+    </>
+  );
+
+  // Use Drawer on mobile and Sheet on desktop
+  return (
+    <>
+      {isMobile ? (
+        <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
+          <DrawerContent className="max-h-[90vh]">
+            <DrawerHeader className="border-b pb-4">
+              <DrawerTitle className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5" />
+                {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Events'}
+              </DrawerTitle>
+            </DrawerHeader>
+            <div className="px-4 py-3">
+              {renderEventsList()}
             </div>
-          </ScrollArea>
-        </SheetContent>
-      </Sheet>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+          <SheetContent 
+            side="right" 
+            className="w-full sm:max-w-md overflow-y-auto border-l animate-in slide-in-from-right"
+          >
+            <SheetHeader className="mb-6">
+              <SheetTitle className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5" />
+                {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Events'}
+              </SheetTitle>
+            </SheetHeader>
+            {renderEventsList()}
+          </SheetContent>
+        </Sheet>
+      )}
 
       <EventModal 
         isOpen={isModalOpen}
