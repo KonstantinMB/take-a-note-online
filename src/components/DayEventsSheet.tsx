@@ -42,8 +42,9 @@ const DayEventsSheet = ({
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [dayEvents, setDayEvents] = useState<CalendarEvent[]>([]);
 
+  // Filter events for the selected date whenever selectedDate or events change
   useEffect(() => {
-    if (selectedDate && events) {
+    if (selectedDate && events && events.length > 0) {
       const filteredEvents = events.filter(event => {
         const eventDate = parseISO(event.start_time);
         return isSameDay(eventDate, selectedDate);
@@ -57,6 +58,8 @@ const DayEventsSheet = ({
       });
       
       setDayEvents(filteredEvents);
+    } else {
+      setDayEvents([]);
     }
   }, [selectedDate, events]);
 
@@ -175,43 +178,43 @@ const DayEventsSheet = ({
 
           <ScrollArea className="h-[calc(100vh-180px)]">
             <div className="space-y-3 pr-4">
-              {dayEvents.map((event) => (
-                <div 
-                  key={event.id}
-                  className={cn(
-                    "p-3 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-all",
-                    "transform hover:scale-[1.02] active:scale-[0.98]",
-                    event.color ? colorVariants[event.color] : colorVariants.default
-                  )}
-                  onClick={() => handleEventClick(event)}
-                >
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-medium">{event.title}</h4>
-                  </div>
-                  
-                  <div className="mt-2 flex items-center text-sm opacity-90">
-                    <Clock className="h-3 w-3 mr-1" />
-                    {event.is_all_day ? (
-                      'All day'
-                    ) : (
-                      <>
-                        {format(new Date(event.start_time), 'h:mm a')}
-                        {event.end_time && (
-                          <> - {format(new Date(event.end_time), 'h:mm a')}</>
-                        )}
-                      </>
+              {dayEvents.length > 0 ? (
+                dayEvents.map((event) => (
+                  <div 
+                    key={event.id}
+                    className={cn(
+                      "p-3 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-all",
+                      "transform hover:scale-[1.02] active:scale-[0.98]",
+                      event.color ? colorVariants[event.color] : colorVariants.default
+                    )}
+                    onClick={() => handleEventClick(event)}
+                  >
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-medium">{event.title}</h4>
+                    </div>
+                    
+                    <div className="mt-2 flex items-center text-sm opacity-90">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {event.is_all_day ? (
+                        'All day'
+                      ) : (
+                        <>
+                          {format(new Date(event.start_time), 'h:mm a')}
+                          {event.end_time && (
+                            <> - {format(new Date(event.end_time), 'h:mm a')}</>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    
+                    {event.description && (
+                      <p className="mt-2 text-sm opacity-90 line-clamp-2">
+                        {event.description}
+                      </p>
                     )}
                   </div>
-                  
-                  {event.description && (
-                    <p className="mt-2 text-sm opacity-90 line-clamp-2">
-                      {event.description}
-                    </p>
-                  )}
-                </div>
-              ))}
-
-              {dayEvents.length === 0 && (
+                ))
+              ) : (
                 <div className="text-center py-8">
                   <CalendarIcon className="h-10 w-10 mx-auto text-gray-400 mb-2" />
                   <p className="text-gray-500">No events for this day</p>

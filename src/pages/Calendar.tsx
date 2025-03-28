@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, parseISO } from "date-fns";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react";
@@ -55,14 +54,14 @@ const CalendarPage = () => {
     setIsLoading(true);
     
     try {
+      // Fetch events for the whole month
       const startDate = startOfMonth(currentDate);
       const endDate = endOfMonth(currentDate);
       
       const { data, error } = await supabase
         .from("calendar_events")
         .select("*")
-        .gte("start_time", startDate.toISOString())
-        .lte("start_time", endDate.toISOString())
+        .eq("user_id", user.id)
         .order("start_time", { ascending: true });
       
       if (error) throw error;
