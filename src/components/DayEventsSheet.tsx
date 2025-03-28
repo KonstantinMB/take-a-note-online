@@ -110,6 +110,7 @@ const DayEventsSheet = ({
       }
       
       onEventUpdate();
+      setIsModalOpen(false);
     } catch (error) {
       console.error("Error saving event:", error);
       toast.error("Failed to save event");
@@ -129,6 +130,7 @@ const DayEventsSheet = ({
       
       toast.success("Event removed from calendar");
       onEventUpdate();
+      setIsModalOpen(false);
     } catch (error) {
       console.error("Error deleting event:", error);
       toast.error("Failed to remove event");
@@ -145,6 +147,9 @@ const DayEventsSheet = ({
     indigo: "bg-indigo-500 border-indigo-600 text-white",
     default: "bg-gray-500 border-gray-600 text-white"
   };
+
+  console.log("DayEventsSheet - selectedDate:", selectedDate);
+  console.log("DayEventsSheet - dayEvents:", dayEvents);
 
   return (
     <>
@@ -175,7 +180,7 @@ const DayEventsSheet = ({
                   key={event.id}
                   className={cn(
                     "p-3 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-all",
-                    "transform hover:scale-[1.02] active:scale-[0.98]", // Added animation for better interactivity
+                    "transform hover:scale-[1.02] active:scale-[0.98]",
                     event.color ? colorVariants[event.color] : colorVariants.default
                   )}
                   onClick={() => handleEventClick(event)}
