@@ -1,13 +1,20 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, FileText, Search, Tag, X } from "lucide-react";
+import { Plus, FileText, Search, Tag, X, ChevronRight, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import NoteCard from "@/components/NoteCard";
 import NoteEditor from "@/components/NoteEditor";
 import EmptyState from "@/components/EmptyState";
 import ConfettiEffect from "@/components/ConfettiEffect";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter 
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +45,10 @@ const Notes = () => {
   const [currentNote, setCurrentNote] = useState<Note | undefined>();
   const [isLoading, setIsLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showCategories, setShowCategories] = useState(false);
+  const [isNewCategoryOpen, setIsNewCategoryOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryColor, setNewCategoryColor] = useState("#D3E4FD"); // Default soft blue
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -219,6 +230,42 @@ const Notes = () => {
     }
   };
 
+  // Handle category creation
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error("Please enter a category name");
+      return;
+    }
+
+    if (!user) {
+      toast.error("You must be logged in to create categories");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("note_categories")
+        .insert({
+          name: newCategoryName.trim(),
+          color: newCategoryColor,
+          user_id: user.id
+        })
+        .select();
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setCategories(prev => [...prev, data[0]]);
+        toast.success("Category created");
+        setNewCategoryName("");
+        setIsNewCategoryOpen(false);
+      }
+    } catch (error) {
+      console.error("Error creating category:", error);
+      toast.error("Failed to create category");
+    }
+  };
+
   // Get category name and color for a note
   const getCategoryInfo = (categoryId: string | null) => {
     if (!categoryId) return { name: "General", color: "#9b87f5" };
@@ -233,6 +280,18 @@ const Notes = () => {
   const clearCategoryFilter = () => {
     setSelectedCategory(null);
   };
+
+  // Soft color palette for categories
+  const softColors = [
+    "#F2FCE2", // Soft Green
+    "#FEF7CD", // Soft Yellow
+    "#FEC6A1", // Soft Orange
+    "#E5DEFF", // Soft Purple
+    "#FFDEE2", // Soft Pink
+    "#FDE1D3", // Soft Peach
+    "#D3E4FD", // Soft Blue
+    "#F1F0FB", // Soft Gray
+  ];
 
   return (
     <div className="page-container">
@@ -256,17 +315,28 @@ const Notes = () => {
         />
       </div>
 
-      {/* Categories filter */}
+      {/* Categories filter - Collapsible */}
       <div className="mb-6">
-        <div className="flex items-center mb-2">
+        <div 
+          className="flex items-center mb-2 cursor-pointer" 
+          onClick={() => setShowCategories(!showCategories)}
+        >
           <Tag className="h-4 w-4 mr-2 text-gray-500" />
           <span className="text-sm font-medium text-gray-700">Categories</span>
+          {showCategories ? (
+            <ChevronDown className="h-4 w-4 ml-1 text-gray-500" />
+          ) : (
+            <ChevronRight className="h-4 w-4 ml-1 text-gray-500" />
+          )}
           
           {selectedCategory && (
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={clearCategoryFilter} 
+              onClick={(e) => {
+                e.stopPropagation();
+                clearCategoryFilter();
+              }} 
               className="ml-2 h-6 px-2 text-xs"
             >
               <X className="h-3 w-3 mr-1" />
@@ -275,17 +345,28 @@ const Notes = () => {
           )}
         </div>
         
-        <div className="flex flex-wrap gap-2">
-          {categories.map(category => (
-            <CategoryBadge
-              key={category.id}
-              name={category.name}
-              color={category.color}
-              className={selectedCategory === category.id ? "ring-2 ring-black/20" : "opacity-80 hover:opacity-100"}
-              onClick={() => setSelectedCategory(prev => prev === category.id ? null : category.id)}
-            />
-          ))}
-        </div>
+        {showCategories && (
+          <div className="flex flex-wrap gap-2 ml-6 mt-2 mb-2">
+            {categories.map(category => (
+              <CategoryBadge
+                key={category.id}
+                name={category.name}
+                color={category.color}
+                className={selectedCategory === category.id ? "ring-2 ring-black/20" : "opacity-80 hover:opacity-100"}
+                onClick={() => setSelectedCategory(prev => prev === category.id ? null : category.id)}
+              />
+            ))}
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-7 px-2 rounded-full"
+              onClick={() => setIsNewCategoryOpen(true)}
+            >
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {isLoading ? (
@@ -332,6 +413,61 @@ const Notes = () => {
           className="py-20"
         />
       )}
+
+      {/* Add Category Dialog */}
+      <Dialog open={isNewCategoryOpen} onOpenChange={setIsNewCategoryOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Create New Category</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label htmlFor="name" className="text-sm font-medium">
+                Category Name
+              </label>
+              <Input
+                id="name"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Enter category name"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">
+                Select Color
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {softColors.map((color) => (
+                  <div 
+                    key={color}
+                    onClick={() => setNewCategoryColor(color)}
+                    className={`w-8 h-8 rounded-full cursor-pointer transition-all ${
+                      newCategoryColor === color ? "ring-2 ring-black/20 scale-110" : ""
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <div 
+                  className="w-8 h-8 rounded-full" 
+                  style={{ backgroundColor: newCategoryColor }} 
+                />
+                <span className="text-sm">Preview: </span>
+                <CategoryBadge name={newCategoryName || "Category"} color={newCategoryColor} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNewCategoryOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateCategory}>
+              Create Category
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <NoteEditor
         isOpen={isEditorOpen}
