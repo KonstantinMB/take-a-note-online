@@ -5,11 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import CategoryBadge from "./CategoryBadge";
+
+interface Category {
+  id: string;
+  name: string;
+  color: string;
+}
 
 interface Note {
   id?: string;
   title: string;
   content: string;
+  category?: string | null;
 }
 
 interface NoteEditorProps {
@@ -17,22 +26,26 @@ interface NoteEditorProps {
   onClose: () => void;
   onSave: (note: Note) => void;
   note?: Note;
+  categories: Category[];
 }
 
-const NoteEditor = ({ isOpen, onClose, onSave, note }: NoteEditorProps) => {
+const NoteEditor = ({ isOpen, onClose, onSave, note, categories = [] }: NoteEditorProps) => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (note) {
       setTitle(note.title);
       setContent(note.content);
+      setSelectedCategory(note.category || null);
     } else {
       setTitle("");
       setContent("");
+      setSelectedCategory(categories.length > 0 ? categories[0].id : null);
     }
-  }, [note, isOpen]);
+  }, [note, isOpen, categories]);
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -46,6 +59,7 @@ const NoteEditor = ({ isOpen, onClose, onSave, note }: NoteEditorProps) => {
         id: note?.id,
         title: title.trim(),
         content: content.trim(),
+        category: selectedCategory,
       });
       
       toast.success(note?.id ? "Note updated" : "Note created");
@@ -57,6 +71,9 @@ const NoteEditor = ({ isOpen, onClose, onSave, note }: NoteEditorProps) => {
       setIsSaving(false);
     }
   };
+
+  // Find the selected category object
+  const currentCategory = categories.find(cat => cat.id === selectedCategory);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -75,6 +92,32 @@ const NoteEditor = ({ isOpen, onClose, onSave, note }: NoteEditorProps) => {
               placeholder="Note title"
               className="text-lg font-medium border-none shadow-none focus-visible:ring-0 px-0 input-focused"
             />
+          </div>
+          
+          <div className="space-y-2">
+            <Select
+              value={selectedCategory || undefined}
+              onValueChange={setSelectedCategory}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  {currentCategory ? (
+                    <div className="flex items-center">
+                      <CategoryBadge name={currentCategory.name} color={currentCategory.color} />
+                    </div>
+                  ) : (
+                    "Select a category"
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    <CategoryBadge name={category.name} color={category.color} />
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2">

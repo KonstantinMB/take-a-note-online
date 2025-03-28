@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, FileText, Search } from "lucide-react";
+import { Plus, FileText, Search, Tag, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import NoteCard from "@/components/NoteCard";
@@ -11,18 +12,28 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import CategoryBadge from "@/components/CategoryBadge";
 
 interface Note {
   id: string;
   title: string;
   content: string;
   created_at: string;
+  category: string | null;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  color: string;
 }
 
 const Notes = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [currentNote, setCurrentNote] = useState<Note | undefined>();
   const [isLoading, setIsLoading] = useState(true);
@@ -36,6 +47,32 @@ const Notes = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  // Fetch categories from database
+  useEffect(() => {
+    const fetchCategories = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from("note_categories")
+          .select("*")
+          .order("name");
+          
+        if (error) throw error;
+        
+        setCategories(data || []);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        toast.error("Failed to load categories");
+      }
+    };
+    
+    if (user) {
+      fetchCategories();
+    }
+  }, [user]);
+
+  // Fetch notes from database
   useEffect(() => {
     const fetchNotes = async () => {
       try {
@@ -53,7 +90,6 @@ const Notes = () => {
         }
 
         setNotes(data || []);
-        setFilteredNotes(data || []);
       } catch (error) {
         console.error("Error fetching notes:", error);
         toast.error("Failed to load notes");
@@ -67,18 +103,26 @@ const Notes = () => {
     }
   }, [user]);
 
+  // Filter notes based on search query and selected category
   useEffect(() => {
+    let filtered = [...notes];
+    
+    // Filter by search query
     if (searchQuery) {
-      const filtered = notes.filter(
+      filtered = filtered.filter(
         note => 
           note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           note.content.toLowerCase().includes(searchQuery.toLowerCase())
       );
-      setFilteredNotes(filtered);
-    } else {
-      setFilteredNotes(notes);
     }
-  }, [searchQuery, notes]);
+    
+    // Filter by selected category
+    if (selectedCategory) {
+      filtered = filtered.filter(note => note.category === selectedCategory);
+    }
+    
+    setFilteredNotes(filtered);
+  }, [searchQuery, selectedCategory, notes]);
 
   const handleCreateNote = () => {
     setCurrentNote(undefined);
@@ -112,7 +156,7 @@ const Notes = () => {
     }
   };
 
-  const handleSaveNote = async (note: { id?: string; title: string; content: string }) => {
+  const handleSaveNote = async (note: { id?: string; title: string; content: string; category?: string | null }) => {
     try {
       if (!user) {
         toast.error("You must be logged in to save notes");
@@ -126,6 +170,7 @@ const Notes = () => {
           .update({
             title: note.title,
             content: note.content,
+            category: note.category,
             updated_at: new Date().toISOString()
           })
           .eq("id", note.id);
@@ -137,7 +182,7 @@ const Notes = () => {
         setNotes(prevNotes =>
           prevNotes.map(n =>
             n.id === note.id
-              ? { ...n, title: note.title, content: note.content }
+              ? { ...n, title: note.title, content: note.content, category: note.category }
               : n
           )
         );
@@ -150,6 +195,7 @@ const Notes = () => {
           .insert({
             title: note.title,
             content: note.content,
+            category: note.category,
             user_id: user.id
           })
           .select();
@@ -173,6 +219,21 @@ const Notes = () => {
     }
   };
 
+  // Get category name and color for a note
+  const getCategoryInfo = (categoryId: string | null) => {
+    if (!categoryId) return { name: "General", color: "#9b87f5" };
+    
+    const category = categories.find(c => c.id === categoryId);
+    return {
+      name: category?.name || "General",
+      color: category?.color || "#9b87f5"
+    };
+  };
+
+  const clearCategoryFilter = () => {
+    setSelectedCategory(null);
+  };
+
   return (
     <div className="page-container">
       <ConfettiEffect isActive={showConfetti} />
@@ -185,7 +246,7 @@ const Notes = () => {
         </Button>
       </div>
 
-      <div className="mb-6 relative">
+      <div className="mb-4 relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
         <Input
           placeholder="Search notes..."
@@ -195,33 +256,71 @@ const Notes = () => {
         />
       </div>
 
+      {/* Categories filter */}
+      <div className="mb-6">
+        <div className="flex items-center mb-2">
+          <Tag className="h-4 w-4 mr-2 text-gray-500" />
+          <span className="text-sm font-medium text-gray-700">Categories</span>
+          
+          {selectedCategory && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={clearCategoryFilter} 
+              className="ml-2 h-6 px-2 text-xs"
+            >
+              <X className="h-3 w-3 mr-1" />
+              Clear filter
+            </Button>
+          )}
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          {categories.map(category => (
+            <CategoryBadge
+              key={category.id}
+              name={category.name}
+              color={category.color}
+              className={selectedCategory === category.id ? "ring-2 ring-black/20" : "opacity-80 hover:opacity-100"}
+              onClick={() => setSelectedCategory(prev => prev === category.id ? null : category.id)}
+            />
+          ))}
+        </div>
+      </div>
+
       {isLoading ? (
         <div className="flex justify-center items-center py-20">
           <div className="animate-pulse text-gray-400">Loading notes...</div>
         </div>
       ) : filteredNotes.length > 0 ? (
-        <ScrollArea className="h-[calc(100vh-220px)]">
+        <ScrollArea className="h-[calc(100vh-280px)]">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredNotes.map((note) => (
-              <NoteCard
-                key={note.id}
-                id={note.id}
-                title={note.title}
-                content={note.content}
-                createdAt={note.created_at}
-                onEdit={handleEditNote}
-                onDelete={handleDeleteNote}
-              />
-            ))}
+            {filteredNotes.map((note) => {
+              const { name, color } = getCategoryInfo(note.category);
+              return (
+                <NoteCard
+                  key={note.id}
+                  id={note.id}
+                  title={note.title}
+                  content={note.content}
+                  createdAt={note.created_at}
+                  category={note.category}
+                  categoryName={name}
+                  categoryColor={color}
+                  onEdit={handleEditNote}
+                  onDelete={handleDeleteNote}
+                />
+              );
+            })}
           </div>
         </ScrollArea>
       ) : (
         <EmptyState
           icon={<FileText className="h-8 w-8" />}
-          title={searchQuery ? "No matching notes found" : "No notes yet"}
+          title={searchQuery || selectedCategory ? "No matching notes found" : "No notes yet"}
           description={
-            searchQuery
-              ? "Try adjusting your search query or create a new note."
+            searchQuery || selectedCategory
+              ? "Try adjusting your search query or category filter."
               : "Create your first note to get started."
           }
           action={
@@ -239,6 +338,7 @@ const Notes = () => {
         onClose={() => setIsEditorOpen(false)}
         onSave={handleSaveNote}
         note={currentNote}
+        categories={categories}
       />
     </div>
   );
