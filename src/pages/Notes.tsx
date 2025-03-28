@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, FileText, Search, Tag, X, ChevronRight, ChevronDown } from "lucide-react";
@@ -58,7 +57,6 @@ const Notes = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // Fetch categories from database
   useEffect(() => {
     const fetchCategories = async () => {
       if (!user) return;
@@ -83,7 +81,6 @@ const Notes = () => {
     }
   }, [user]);
 
-  // Fetch notes from database
   useEffect(() => {
     const fetchNotes = async () => {
       try {
@@ -114,11 +111,9 @@ const Notes = () => {
     }
   }, [user]);
 
-  // Filter notes based on search query and selected category
   useEffect(() => {
     let filtered = [...notes];
     
-    // Filter by search query
     if (searchQuery) {
       filtered = filtered.filter(
         note => 
@@ -127,7 +122,6 @@ const Notes = () => {
       );
     }
     
-    // Filter by selected category
     if (selectedCategory) {
       filtered = filtered.filter(note => note.category === selectedCategory);
     }
@@ -230,7 +224,6 @@ const Notes = () => {
     }
   };
 
-  // Handle category creation
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) {
       toast.error("Please enter a category name");
@@ -266,7 +259,6 @@ const Notes = () => {
     }
   };
 
-  // Get category name and color for a note
   const getCategoryInfo = (categoryId: string | null) => {
     if (!categoryId) return { name: "General", color: "#9b87f5" };
     
@@ -281,7 +273,6 @@ const Notes = () => {
     setSelectedCategory(null);
   };
 
-  // Soft color palette for categories
   const softColors = [
     "#F2FCE2", // Soft Green
     "#FEF7CD", // Soft Yellow
@@ -315,7 +306,6 @@ const Notes = () => {
         />
       </div>
 
-      {/* Categories filter - Collapsible */}
       <div className="mb-6">
         <div 
           className="flex items-center mb-2 cursor-pointer" 
@@ -414,7 +404,6 @@ const Notes = () => {
         />
       )}
 
-      {/* Add Category Dialog */}
       <Dialog open={isNewCategoryOpen} onOpenChange={setIsNewCategoryOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
