@@ -6,12 +6,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import NoteCard from "@/components/NoteCard";
 import NoteEditor from "@/components/NoteEditor";
 import EmptyState from "@/components/EmptyState";
-import ConfettiEffect from "@/components/ConfettiEffect";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 
 interface Note {
   id: string;
@@ -27,16 +25,17 @@ const Notes = () => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [currentNote, setCurrentNote] = useState<Note | undefined>();
   const [isLoading, setIsLoading] = useState(true);
-  const [showConfetti, setShowConfetti] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
+  // Redirect to auth page if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/auth");
     }
   }, [isAuthenticated, navigate]);
 
+  // Fetch notes
   useEffect(() => {
     const fetchNotes = async () => {
       try {
@@ -68,6 +67,7 @@ const Notes = () => {
     }
   }, [user]);
 
+  // Filter notes based on search query
   useEffect(() => {
     if (searchQuery) {
       const filtered = notes.filter(
@@ -106,9 +106,7 @@ const Notes = () => {
       }
 
       setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
-      toast.success("Note deleted", {
-        icon: "🗑️",
-      });
+      toast.success("Note deleted");
     } catch (error) {
       console.error("Error deleting note:", error);
       toast.error("Failed to delete note");
@@ -123,6 +121,7 @@ const Notes = () => {
       }
 
       if (note.id) {
+        // Update existing note
         const { error } = await supabase
           .from("notes")
           .update({
@@ -144,10 +143,9 @@ const Notes = () => {
           )
         );
         
-        toast.success("Note updated", {
-          icon: "✅",
-        });
+        toast.success("Note updated");
       } else {
+        // Create new note
         const { data, error } = await supabase
           .from("notes")
           .insert({
@@ -163,12 +161,9 @@ const Notes = () => {
 
         if (data && data.length > 0) {
           setNotes(prevNotes => [data[0], ...prevNotes]);
-          setShowConfetti(true);
         }
         
-        toast.success("Note created", {
-          icon: "🎉",
-        });
+        toast.success("Note created");
       }
     } catch (error) {
       console.error("Error saving note:", error);
@@ -176,50 +171,17 @@ const Notes = () => {
     }
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { type: "spring", stiffness: 300, damping: 24 }
-    }
-  };
-
   return (
     <div className="page-container">
-      <ConfettiEffect trigger={showConfetti} duration={2500} />
-      
-      <motion.div 
-        className="flex justify-between items-center mb-6"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Notes</h1>
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button onClick={handleCreateNote} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            New Note
-          </Button>
-        </motion.div>
-      </motion.div>
+        <Button onClick={handleCreateNote} size="sm">
+          <Plus className="h-4 w-4 mr-2" />
+          New Note
+        </Button>
+      </div>
 
-      <motion.div 
-        className="mb-6 relative"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-      >
+      <div className="mb-6 relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
         <Input
           placeholder="Search notes..."
@@ -227,7 +189,7 @@ const Notes = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10 bg-gray-50 border-gray-100 input-focused"
         />
-      </motion.div>
+      </div>
 
       {isLoading ? (
         <div className="flex justify-center items-center py-20">
@@ -235,25 +197,19 @@ const Notes = () => {
         </div>
       ) : filteredNotes.length > 0 ? (
         <ScrollArea className="h-[calc(100vh-220px)]">
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredNotes.map((note) => (
-              <motion.div key={note.id} variants={itemVariants}>
-                <NoteCard
-                  id={note.id}
-                  title={note.title}
-                  content={note.content}
-                  createdAt={note.created_at}
-                  onEdit={handleEditNote}
-                  onDelete={handleDeleteNote}
-                />
-              </motion.div>
+              <NoteCard
+                key={note.id}
+                id={note.id}
+                title={note.title}
+                content={note.content}
+                createdAt={note.created_at}
+                onEdit={handleEditNote}
+                onDelete={handleDeleteNote}
+              />
             ))}
-          </motion.div>
+          </div>
         </ScrollArea>
       ) : (
         <EmptyState
@@ -265,12 +221,10 @@ const Notes = () => {
               : "Create your first note to get started."
           }
           action={
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button onClick={handleCreateNote} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                New Note
-              </Button>
-            </motion.div>
+            <Button onClick={handleCreateNote} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              New Note
+            </Button>
           }
           className="py-20"
         />

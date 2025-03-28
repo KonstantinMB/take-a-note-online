@@ -1,16 +1,15 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, CheckSquare, LayoutList, CheckCircle } from "lucide-react";
+import { Plus, CheckSquare, LayoutList } from "lucide-react";
 import TodoItem from "@/components/TodoItem";
 import EmptyState from "@/components/EmptyState";
-import ConfettiEffect from "@/components/ConfettiEffect";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 
 interface Todo {
   id: string;
@@ -24,16 +23,17 @@ const TodoPage = () => {
   const [newTodoText, setNewTodoText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
-  const [showConfetti, setShowConfetti] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
+  // Redirect to auth page if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/auth");
     }
   }, [isAuthenticated, navigate]);
 
+  // Fetch todos
   useEffect(() => {
     const fetchTodos = async () => {
       try {
@@ -81,7 +81,7 @@ const TodoPage = () => {
         .insert({
           text: newTodoText.trim(),
           completed: false,
-          user_id: user.id
+          user_id: user.id // Use user.id instead of user.email
         })
         .select();
 
@@ -91,13 +91,10 @@ const TodoPage = () => {
 
       if (data && data.length > 0) {
         setTodos(prev => [data[0], ...prev]);
-        setShowConfetti(true);
       }
       
       setNewTodoText("");
-      toast.success("Task added", {
-        icon: "🎉",
-      });
+      toast.success("Task added");
     } catch (error) {
       console.error("Error adding todo:", error);
       toast.error("Failed to add task");
@@ -128,13 +125,6 @@ const TodoPage = () => {
             : todo
         )
       );
-      
-      if (!todoToUpdate.completed) {
-        setShowConfetti(true);
-        toast.success("Task completed", {
-          icon: "✅",
-        });
-      }
     } catch (error) {
       console.error("Error toggling todo:", error);
       toast.error("Failed to update task");
@@ -153,9 +143,7 @@ const TodoPage = () => {
       }
 
       setTodos(prevTodos => prevTodos.filter(todo => todo.id !== id));
-      toast.success("Task deleted", {
-        icon: "🗑️",
-      });
+      toast.success("Task deleted");
     } catch (error) {
       console.error("Error deleting todo:", error);
       toast.error("Failed to delete task");
@@ -215,75 +203,34 @@ const TodoPage = () => {
     }
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { type: "spring", stiffness: 300, damping: 24 }
-    }
-  };
-
   return (
     <div className="page-container">
-      <ConfettiEffect trigger={showConfetti} duration={2500} />
-      
-      <motion.div 
-        className="flex justify-between items-center mb-6"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">To-Do List</h1>
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleClearCompleted}
-            disabled={!todos.some(todo => todo.completed)}
-          >
-            Clear completed
-          </Button>
-        </motion.div>
-      </motion.div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleClearCompleted}
+          disabled={!todos.some(todo => todo.completed)}
+        >
+          Clear completed
+        </Button>
+      </div>
       
-      <motion.form 
-        onSubmit={handleAddTodo} 
-        className="flex gap-2 mb-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.5 }}
-      >
+      <form onSubmit={handleAddTodo} className="flex gap-2 mb-6">
         <Input
           value={newTodoText}
           onChange={(e) => setNewTodoText(e.target.value)}
           placeholder="Add a new task..."
           className="input-focused"
         />
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button type="submit" disabled={!newTodoText.trim() || !user}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add
-          </Button>
-        </motion.div>
-      </motion.form>
+        <Button type="submit" disabled={!newTodoText.trim() || !user}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add
+        </Button>
+      </form>
       
-      <motion.div 
-        className="flex gap-2 mb-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-      >
+      <div className="flex gap-2 mb-4">
         <Button
           variant={filter === "all" ? "default" : "outline"}
           size="sm"
@@ -305,7 +252,7 @@ const TodoPage = () => {
         >
           Completed
         </Button>
-      </motion.div>
+      </div>
       
       {isLoading ? (
         <div className="flex justify-center items-center py-20">
@@ -313,25 +260,19 @@ const TodoPage = () => {
         </div>
       ) : filteredTodos.length > 0 ? (
         <ScrollArea className="h-[calc(100vh-280px)]">
-          <motion.div 
-            className="space-y-2"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
+          <div className="space-y-2">
             {filteredTodos.map((todo) => (
-              <motion.div key={todo.id} variants={itemVariants}>
-                <TodoItem
-                  id={todo.id}
-                  text={todo.text}
-                  completed={todo.completed}
-                  onToggle={handleToggleTodo}
-                  onDelete={handleDeleteTodo}
-                  onEdit={handleEditTodo}
-                />
-              </motion.div>
+              <TodoItem
+                key={todo.id}
+                id={todo.id}
+                text={todo.text}
+                completed={todo.completed}
+                onToggle={handleToggleTodo}
+                onDelete={handleDeleteTodo}
+                onEdit={handleEditTodo}
+              />
             ))}
-          </motion.div>
+          </div>
           
           <div className="mt-4 text-sm text-gray-500 text-center py-2">
             {todos.filter(t => !t.completed).length} tasks left
@@ -339,7 +280,7 @@ const TodoPage = () => {
         </ScrollArea>
       ) : (
         <EmptyState
-          icon={filter === "completed" ? <CheckCircle className="h-8 w-8" /> : <LayoutList className="h-8 w-8" />}
+          icon={filter === "completed" ? <CheckSquare className="h-8 w-8" /> : <LayoutList className="h-8 w-8" />}
           title={
             filter === "all"
               ? "No tasks yet"
@@ -351,17 +292,13 @@ const TodoPage = () => {
             filter === "all"
               ? "Add your first task to get started."
               : filter === "active"
-              ? "You've completed all your tasks! 🎉"
+              ? "You've completed all your tasks!"
               : "Complete a task to see it here."
           }
           action={
             filter === "all" && (
               <div className="w-full max-w-sm">
-                <motion.form 
-                  onSubmit={handleAddTodo} 
-                  className="flex gap-2"
-                  whileHover={{ scale: 1.02 }}
-                >
+                <form onSubmit={handleAddTodo} className="flex gap-2">
                   <Input
                     value={newTodoText}
                     onChange={(e) => setNewTodoText(e.target.value)}
@@ -371,7 +308,7 @@ const TodoPage = () => {
                   <Button type="submit" disabled={!newTodoText.trim() || !user}>
                     Add
                   </Button>
-                </motion.form>
+                </form>
               </div>
             )
           }
