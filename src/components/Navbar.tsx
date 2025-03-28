@@ -21,13 +21,13 @@ import {
 import { Menu, X, FileText, CheckSquare, Calendar } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Navbar = () => {
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const location = useLocation();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
 
   const getInitials = (email: string) => {
     return email.split("@")[0].substring(0, 2).toUpperCase();
@@ -96,7 +96,7 @@ const Navbar = () => {
                   </span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut}>
+                <DropdownMenuItem onClick={logout}>
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
