@@ -45,9 +45,14 @@ const DayEventsSheet = ({
   // Filter events for the selected date whenever selectedDate or events change
   useEffect(() => {
     if (selectedDate && events && events.length > 0) {
+      console.log("Filtering events for date:", selectedDate);
+      console.log("Available events:", events);
+      
       const filteredEvents = events.filter(event => {
         const eventDate = parseISO(event.start_time);
-        return isSameDay(eventDate, selectedDate);
+        const result = isSameDay(eventDate, selectedDate);
+        console.log(`Event ${event.title} on ${eventDate} matches selected date ${selectedDate}: ${result}`);
+        return result;
       });
       
       // Sort events by time
@@ -57,6 +62,7 @@ const DayEventsSheet = ({
         return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
       });
       
+      console.log("Filtered events:", filteredEvents);
       setDayEvents(filteredEvents);
     } else {
       setDayEvents([]);
@@ -153,6 +159,10 @@ const DayEventsSheet = ({
 
   console.log("DayEventsSheet - selectedDate:", selectedDate);
   console.log("DayEventsSheet - dayEvents:", dayEvents);
+
+  // Debug rendering
+  console.log("Sheet is open:", isOpen);
+  console.log("Number of events to display:", dayEvents.length);
 
   return (
     <>
