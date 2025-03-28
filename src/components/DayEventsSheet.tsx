@@ -162,7 +162,7 @@ const DayEventsSheet = ({
               {dayEvents.length === 0 ? 'No events scheduled' : 
                 `${dayEvents.length} event${dayEvents.length !== 1 ? 's' : ''}`}
             </h3>
-            <Button size="sm" onClick={handleAddNewEvent}>
+            <Button size="sm" onClick={handleAddNewEvent} className="bg-blue-500 hover:bg-blue-600">
               <Plus className="h-4 w-4 mr-1" />
               Add Event
             </Button>
@@ -175,6 +175,7 @@ const DayEventsSheet = ({
                   key={event.id}
                   className={cn(
                     "p-3 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-all",
+                    "transform hover:scale-[1.02] active:scale-[0.98]", // Added animation for better interactivity
                     event.color ? colorVariants[event.color] : colorVariants.default
                   )}
                   onClick={() => handleEventClick(event)}

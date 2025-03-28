@@ -87,6 +87,7 @@ const CalendarPage = () => {
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
     
+    // Always open the sheet on mobile or the modal on desktop
     if (isMobile) {
       setIsSheetOpen(true);
     } else {
@@ -251,7 +252,8 @@ const CalendarPage = () => {
                   "min-h-[80px] sm:min-h-[100px] p-1 border border-gray-100 rounded-md",
                   "transition-colors cursor-pointer",
                   isToday ? "bg-blue-50" : isCurrentMonth ? "bg-white" : "bg-gray-50 opacity-70",
-                  "hover:border-blue-300 hover:shadow-sm"
+                  "hover:border-blue-300 hover:shadow-md hover:bg-blue-50/50",
+                  "relative" // Added to position the click indicator
                 )}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -260,6 +262,9 @@ const CalendarPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2, delay: index * 0.01 }}
               >
+                {/* Click indicator - small dot to show day is clickable */}
+                <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-400 rounded-full opacity-50"></div>
+                
                 <div className="flex flex-col h-full">
                   <div className={cn(
                     "text-xs sm:text-sm font-medium mb-1 p-1 rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center",
@@ -276,6 +281,7 @@ const CalendarPage = () => {
                           className={cn(
                             "text-xs px-2 py-1 rounded-md text-white truncate",
                             "border-l-2",
+                            "hover:ring-1 hover:ring-offset-1 hover:ring-opacity-50", // Added to show interactivity
                             event.color ? colorVariants[event.color] : colorVariants.default
                           )}
                           onClick={(e) => handleEventClick(e, event)}
@@ -284,7 +290,7 @@ const CalendarPage = () => {
                         </div>
                       ))}
                       {dayEvents.length > (isMobile ? 2 : 3) && (
-                        <div className="text-xs px-2 py-1 text-gray-500 font-medium">
+                        <div className="text-xs px-2 py-1 text-gray-500 font-medium hover:underline">
                           +{dayEvents.length - (isMobile ? 2 : 3)} more
                         </div>
                       )}
@@ -297,6 +303,7 @@ const CalendarPage = () => {
         </div>
       </div>
 
+      {/* Loading and empty states */}
       {isLoading && (
         <div className="flex justify-center items-center py-10">
           <div className="animate-pulse text-gray-400">Loading events...</div>
