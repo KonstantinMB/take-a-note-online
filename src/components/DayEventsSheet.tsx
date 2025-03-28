@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, isSameDay, parseISO, startOfDay } from "date-fns";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -41,6 +40,10 @@ const DayEventsSheet = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [dayEvents, setDayEvents] = useState<CalendarEvent[]>([]);
+
+  useEffect(() => {
+    console.log("DayEventsSheet received isOpen prop:", isOpen);
+  }, [isOpen]);
 
   // Filter events for the selected date whenever selectedDate or events change
   useEffect(() => {
@@ -172,8 +175,11 @@ const DayEventsSheet = ({
 
   return (
     <>
-      <Sheet open={isOpen} onOpenChange={onClose}>
-        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+      <Sheet open={isOpen} onOpenChange={(open) => {
+        console.log("Sheet open state changed to:", open);
+        if (!open) onClose();
+      }}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
           <SheetHeader className="mb-6">
             <SheetTitle className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5" />

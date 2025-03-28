@@ -80,25 +80,14 @@ const CalendarPage = () => {
   
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
-    
-    if (isMobile) {
-      setIsSheetOpen(true);
-    } else {
-      setSelectedEvent(null);
-      setIsModalOpen(true);
-    }
+    setIsSheetOpen(true);
   };
   
   const handleEventClick = (e: React.MouseEvent, event: CalendarEvent) => {
     e.stopPropagation();
     setSelectedEvent(event);
     setSelectedDate(parseISO(event.start_time));
-    
-    if (isMobile) {
-      setIsSheetOpen(true);
-    } else {
-      setIsModalOpen(true);
-    }
+    setIsSheetOpen(true);
   };
 
   const handleSaveEvent = async (eventData: any) => {
@@ -183,6 +172,10 @@ const CalendarPage = () => {
     indigo: "bg-indigo-500 border-indigo-600",
     default: "bg-gray-500 border-gray-600"
   };
+
+  console.log("Calendar - isSheetOpen:", isSheetOpen);
+  console.log("Calendar - selectedDate:", selectedDate);
+  console.log("Calendar - isMobile:", isMobile);
 
   return (
     <div className="page-container">
