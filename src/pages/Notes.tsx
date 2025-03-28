@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import CategoryBadge from "@/components/CategoryBadge";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface Note {
   id: string;
@@ -285,123 +286,176 @@ const Notes = () => {
   ];
 
   return (
-    <div className="page-container">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="page-container max-w-[1400px] mx-auto px-4 sm:px-6 py-8"
+    >
       <ConfettiEffect isActive={showConfetti} />
       
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Notes</h1>
-        <Button onClick={handleCreateNote} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          New Note
-        </Button>
-      </div>
-
-      <div className="mb-4 relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-        <Input
-          placeholder="Search notes..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 bg-gray-50 border-gray-100 input-focused"
-        />
-      </div>
-
-      <div className="mb-6">
-        <div 
-          className="flex items-center mb-2 cursor-pointer" 
-          onClick={() => setShowCategories(!showCategories)}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <motion.h1 
+          initial={{ x: -20 }}
+          animate={{ x: 0 }}
+          className="text-2xl font-bold"
         >
-          <Tag className="h-4 w-4 mr-2 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700">Categories</span>
-          {showCategories ? (
-            <ChevronDown className="h-4 w-4 ml-1 text-gray-500" />
-          ) : (
-            <ChevronRight className="h-4 w-4 ml-1 text-gray-500" />
-          )}
-          
-          {selectedCategory && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={(e) => {
-                e.stopPropagation();
-                clearCategoryFilter();
-              }} 
-              className="ml-2 h-6 px-2 text-xs"
-            >
-              <X className="h-3 w-3 mr-1" />
-              Clear filter
-            </Button>
-          )}
-        </div>
-        
-        {showCategories && (
-          <div className="flex flex-wrap gap-2 ml-6 mt-2 mb-2">
-            {categories.map(category => (
-              <CategoryBadge
-                key={category.id}
-                name={category.name}
-                color={category.color}
-                className={selectedCategory === category.id ? "ring-2 ring-black/20" : "opacity-80 hover:opacity-100"}
-                onClick={() => setSelectedCategory(prev => prev === category.id ? null : category.id)}
-              />
-            ))}
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-7 px-2 rounded-full"
-              onClick={() => setIsNewCategoryOpen(true)}
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
-          </div>
-        )}
+          Notes
+        </motion.h1>
+        <motion.div
+          initial={{ x: 20 }}
+          animate={{ x: 0 }}
+        >
+          <Button onClick={handleCreateNote} size="sm" className="w-full sm:w-auto">
+            <Plus className="h-4 w-4 mr-2" />
+            New Note
+          </Button>
+        </motion.div>
       </div>
+
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="mb-6"
+      >
+        <div className="mb-4 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search notes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 bg-white border border-gray-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+
+        <div className="mb-6">
+          <motion.div 
+            className="flex items-center mb-2 cursor-pointer bg-gray-50 p-2 rounded-lg" 
+            onClick={() => setShowCategories(!showCategories)}
+            whileHover={{ backgroundColor: "#F3F4F6" }}
+          >
+            <Tag className="h-4 w-4 mr-2 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">Categories</span>
+            <motion.div
+              animate={{ rotate: showCategories ? 90 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronRight className="h-4 w-4 ml-1 text-gray-500" />
+            </motion.div>
+            
+            {selectedCategory && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  clearCategoryFilter();
+                }} 
+                className="ml-2 h-6 px-2 text-xs"
+              >
+                <X className="h-3 w-3 mr-1" />
+                Clear filter
+              </Button>
+            )}
+          </motion.div>
+          
+          <AnimatePresence>
+            {showCategories && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="flex flex-wrap gap-2 ml-6 mt-2 mb-2">
+                  {categories.map(category => (
+                    <motion.div
+                      key={category.id}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <CategoryBadge
+                        name={category.name}
+                        color={category.color}
+                        className={selectedCategory === category.id ? "ring-2 ring-black/20" : "opacity-80 hover:opacity-100"}
+                        onClick={() => setSelectedCategory(prev => prev === category.id ? null : category.id)}
+                      />
+                    </motion.div>
+                  ))}
+                  
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-7 px-2 rounded-full"
+                      onClick={() => setIsNewCategoryOpen(true)}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </motion.div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
 
       {isLoading ? (
         <div className="flex justify-center items-center py-20">
-          <div className="animate-pulse text-gray-400">Loading notes...</div>
+          <motion.div 
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            className="text-gray-400"
+          >
+            Loading notes...
+          </motion.div>
         </div>
       ) : filteredNotes.length > 0 ? (
         <ScrollArea className="h-[calc(100vh-280px)]">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredNotes.map((note) => {
-              const { name, color } = getCategoryInfo(note.category);
-              return (
-                <NoteCard
-                  key={note.id}
-                  id={note.id}
-                  title={note.title}
-                  content={note.content}
-                  createdAt={note.created_at}
-                  category={note.category}
-                  categoryName={name}
-                  categoryColor={color}
-                  onEdit={handleEditNote}
-                  onDelete={handleDeleteNote}
-                />
-              );
-            })}
-          </div>
+          <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-1">
+            <AnimatePresence>
+              {filteredNotes.map((note, index) => {
+                const { name, color } = getCategoryInfo(note.category);
+                return (
+                  <NoteCard
+                    key={note.id}
+                    id={note.id}
+                    title={note.title}
+                    content={note.content}
+                    createdAt={note.created_at}
+                    category={note.category}
+                    categoryName={name}
+                    categoryColor={color}
+                    onEdit={handleEditNote}
+                    onDelete={handleDeleteNote}
+                    index={index}
+                  />
+                );
+              })}
+            </AnimatePresence>
+          </motion.div>
         </ScrollArea>
       ) : (
-        <EmptyState
-          icon={<FileText className="h-8 w-8" />}
-          title={searchQuery || selectedCategory ? "No matching notes found" : "No notes yet"}
-          description={
-            searchQuery || selectedCategory
-              ? "Try adjusting your search query or category filter."
-              : "Create your first note to get started."
-          }
-          action={
-            <Button onClick={handleCreateNote} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              New Note
-            </Button>
-          }
-          className="py-20"
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <EmptyState
+            icon={<FileText className="h-8 w-8" />}
+            title={searchQuery || selectedCategory ? "No matching notes found" : "No notes yet"}
+            description={
+              searchQuery || selectedCategory
+                ? "Try adjusting your search query or category filter."
+                : "Create your first note to get started."
+            }
+            action={
+              <Button onClick={handleCreateNote} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                New Note
+              </Button>
+            }
+            className="py-20"
+          />
+        </motion.div>
       )}
 
       <Dialog open={isNewCategoryOpen} onOpenChange={setIsNewCategoryOpen}>
@@ -465,7 +519,7 @@ const Notes = () => {
         note={currentNote}
         categories={categories}
       />
-    </div>
+    </motion.div>
   );
 };
 

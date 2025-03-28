@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -77,9 +76,9 @@ const NoteEditor = ({ isOpen, onClose, onSave, note, categories = [] }: NoteEdit
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[600px] overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-2">
-          <DialogTitle className="text-xl font-medium">
+          <DialogTitle className="text-xl font-medium text-center">
             {note?.id ? "Edit Note" : "Create Note"}
           </DialogTitle>
         </DialogHeader>
@@ -90,7 +89,7 @@ const NoteEditor = ({ isOpen, onClose, onSave, note, categories = [] }: NoteEdit
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Note title"
-              className="text-lg font-medium border-none shadow-none focus-visible:ring-0 px-0 input-focused"
+              className="text-lg font-medium px-3 py-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           
@@ -125,7 +124,7 @@ const NoteEditor = ({ isOpen, onClose, onSave, note, categories = [] }: NoteEdit
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Write your note here..."
-              className="min-h-[200px] resize-none border-none shadow-none focus-visible:ring-0 px-0 input-focused"
+              className="min-h-[200px] resize-none border rounded-md shadow-none focus-visible:ring-0 px-3 py-2 input-focused"
             />
           </div>
         </div>

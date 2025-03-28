@@ -178,51 +178,7 @@ const Index = () => {
           </motion.div>
         </div>
       </motion.section>
-      
-      <motion.section 
-        className="py-16 px-4 bg-gradient-to-r from-indigo-50 to-blue-50"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
-      >
-        <div className="max-w-4xl mx-auto">
-          <motion.div 
-            className="text-center mb-8"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <h2 className="text-3xl font-bold mb-4">Let's Connect</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              I'm always interested in new opportunities and collaborations.
-              Feel free to reach out to me on LinkedIn.
-            </p>
-          </motion.div>
-          
-          <motion.div 
-            className="flex justify-center"
-            initial={{ scale: 0.9, opacity: 0 }}
-            whileInView={{ scale: 1, opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ type: "spring", stiffness: 50 }}
-          >
-            <motion.a 
-              href="https://www.linkedin.com/in/your-profile-url" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 bg-[#0077B5] hover:bg-[#0069a2] text-white px-6 py-3 rounded-lg shadow-md transition-all duration-300"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Linkedin className="h-6 w-6" />
-              <span className="font-medium">Connect on LinkedIn</span>
-            </motion.a>
-          </motion.div>
-        </div>
-      </motion.section>
-      
+
       <motion.section 
         className="py-16 px-4"
         initial={{ opacity: 0 }}
@@ -257,6 +213,50 @@ const Index = () => {
             </Button>
           </motion.div>
         </motion.div>
+      </motion.section>
+      
+      <motion.section 
+        className="py-16 px-4 bg-gradient-to-r from-indigo-50 to-blue-50"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="max-w-4xl mx-auto">
+          <motion.div 
+            className="text-center mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-3xl font-bold mb-4">Let's Connect</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              I'm always interested in new opportunities and collaborations.
+              Feel free to reach out to me on LinkedIn.
+            </p>
+          </motion.div>
+          
+          <motion.div 
+            className="flex justify-center"
+            initial={{ scale: 0.9, opacity: 0 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ type: "spring", stiffness: 50 }}
+          >
+            <motion.a 
+              href="https://www.linkedin.com/in/kbor/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 bg-[#0077B5] hover:bg-[#0069a2] text-white px-6 py-3 rounded-lg shadow-md transition-all duration-300"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Linkedin className="h-6 w-6" />
+              <span className="font-medium">Connect on LinkedIn</span>
+            </motion.a>
+          </motion.div>
+        </div>
       </motion.section>
     </div>
   );
