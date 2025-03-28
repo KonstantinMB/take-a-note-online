@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, CheckSquare, LayoutList } from "lucide-react";
 import TodoItem from "@/components/TodoItem";
 import EmptyState from "@/components/EmptyState";
+import ConfettiEffect from "@/components/ConfettiEffect";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,17 +23,16 @@ const TodoPage = () => {
   const [newTodoText, setNewTodoText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+  const [showConfetti, setShowConfetti] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect to auth page if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/auth");
     }
   }, [isAuthenticated, navigate]);
 
-  // Fetch todos
   useEffect(() => {
     const fetchTodos = async () => {
       try {
@@ -81,7 +80,7 @@ const TodoPage = () => {
         .insert({
           text: newTodoText.trim(),
           completed: false,
-          user_id: user.id // Use user.id instead of user.email
+          user_id: user.id
         })
         .select();
 
@@ -95,6 +94,9 @@ const TodoPage = () => {
       
       setNewTodoText("");
       toast.success("Task added");
+      
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 100);
     } catch (error) {
       console.error("Error adding todo:", error);
       toast.error("Failed to add task");
@@ -205,6 +207,8 @@ const TodoPage = () => {
 
   return (
     <div className="page-container">
+      <ConfettiEffect isActive={showConfetti} />
+      
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">To-Do List</h1>
         <Button

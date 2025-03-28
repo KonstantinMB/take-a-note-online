@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import NoteCard from "@/components/NoteCard";
 import NoteEditor from "@/components/NoteEditor";
 import EmptyState from "@/components/EmptyState";
+import ConfettiEffect from "@/components/ConfettiEffect";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,17 +26,16 @@ const Notes = () => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [currentNote, setCurrentNote] = useState<Note | undefined>();
   const [isLoading, setIsLoading] = useState(true);
+  const [showConfetti, setShowConfetti] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect to auth page if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/auth");
     }
   }, [isAuthenticated, navigate]);
 
-  // Fetch notes
   useEffect(() => {
     const fetchNotes = async () => {
       try {
@@ -67,7 +67,6 @@ const Notes = () => {
     }
   }, [user]);
 
-  // Filter notes based on search query
   useEffect(() => {
     if (searchQuery) {
       const filtered = notes.filter(
@@ -120,8 +119,8 @@ const Notes = () => {
         return;
       }
 
+      let isNewNote = false;
       if (note.id) {
-        // Update existing note
         const { error } = await supabase
           .from("notes")
           .update({
@@ -145,7 +144,7 @@ const Notes = () => {
         
         toast.success("Note updated");
       } else {
-        // Create new note
+        isNewNote = true;
         const { data, error } = await supabase
           .from("notes")
           .insert({
@@ -164,6 +163,9 @@ const Notes = () => {
         }
         
         toast.success("Note created");
+        
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 100);
       }
     } catch (error) {
       console.error("Error saving note:", error);
@@ -173,6 +175,8 @@ const Notes = () => {
 
   return (
     <div className="page-container">
+      <ConfettiEffect isActive={showConfetti} />
+      
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Notes</h1>
         <Button onClick={handleCreateNote} size="sm">
