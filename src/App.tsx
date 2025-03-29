@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Notes from "./pages/Notes";
 import Todo from "./pages/Todo";
 import Calendar from "./pages/Calendar";
+import References from "./pages/References";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Navbar from "./components/Navbar";
@@ -41,6 +42,11 @@ const App = () => (
                 <Route path="/calendar" element={
                   <ProtectedRoute>
                     <Calendar />
+                  </ProtectedRoute>
+                } />
+                <Route path="/references" element={
+                  <ProtectedRoute>
+                    <References />
                   </ProtectedRoute>
                 } />
                 <Route path="/auth" element={<Auth />} />

@@ -1,158 +1,141 @@
 
-import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
-import { Menu, X, FileText, CheckSquare, Calendar } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { LogOut, Menu, X } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
-  const isMobile = useIsMobile();
+  const { isAuthenticated, logout } = useAuth();
 
-  const getInitials = (email: string) => {
-    return email.split("@")[0].substring(0, 2).toUpperCase();
-  };
-
-  const navLinks = [
-    { href: "/notes", label: "Notes", icon: FileText },
-    { href: "/todo", label: "Todo", icon: CheckSquare },
-    { href: "/calendar", label: "Calendar", icon: Calendar },
+  const navItems = [
+    { path: "/", label: "Home" },
+    { path: "/notes", label: "Notes", requiresAuth: true },
+    { path: "/todo", label: "Todo", requiresAuth: true },
+    { path: "/calendar", label: "Calendar", requiresAuth: true },
+    { path: "/references", label: "References", requiresAuth: true },
   ];
 
-  const isActive = (path: string) => location.pathname === path;
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const closeMenu = () => {
+    setIsMenuOpen(false);
+  };
+
+  const filteredNavItems = navItems.filter(item => 
+    !item.requiresAuth || (item.requiresAuth && isAuthenticated)
+  );
 
   return (
-    <header className="border-b border-gray-100 bg-white">
-      <div className="container max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center">
-          <Link to="/" className="font-medium text-xl mr-8">
-            TakeANote
-          </Link>
+    <nav className="py-4 px-6 border-b border-border bg-background sticky top-0 z-10">
+      <div className="max-w-7xl mx-auto flex justify-between items-center">
+        <Link to="/" className="font-bold text-xl">
+          Organizer
+        </Link>
 
-          {!isMobile && (
-            <NavigationMenu className="mx-auto">
-              <NavigationMenuList className="flex gap-2">
-                {navLinks.map((link) => (
-                  <NavigationMenuItem key={link.href}>
-                    <NavigationMenuLink
-                      asChild
-                      className={cn(
-                        navigationMenuTriggerStyle(),
-                        "flex items-center px-4",
-                        isActive(link.href) &&
-                          "bg-accent text-accent-foreground"
-                      )}
-                    >
-                      <Link to={link.href} className="flex items-center">
-                        <link.icon className="h-4 w-4 mr-2" />
-                        {link.label}
-                      </Link>
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-                ))}
-              </NavigationMenuList>
-            </NavigationMenu>
-          )}
-        </div>
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center space-x-1">
+          {filteredNavItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={cn(
+                "px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                location.pathname === item.path
+                  ? "bg-primary/10 text-primary"
+                  : "text-foreground/60 hover:text-foreground hover:bg-accent"
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
 
-        <div className="flex items-center gap-4">
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="relative h-10 w-10 rounded-full"
-                >
-                  <Avatar className="h-10 w-10 border border-gray-200">
-                    <AvatarFallback>
-                      {getInitials(user.email || "")}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-auto min-w-[200px]" align="end" forceMount>
-                <DropdownMenuItem className="px-3 py-2 cursor-default">
-                  <span className="text-sm font-medium truncate max-w-[240px] block overflow-hidden">
-                    {user?.email}
-                  </span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="px-3 py-2">
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button asChild size="sm">
-              <Link to="/auth">Sign in</Link>
-            </Button>
-          )}
-
-          {isMobile && (
+          {isAuthenticated ? (
             <Button
               variant="ghost"
-              size="icon"
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              size="sm"
               className="ml-2"
+              onClick={logout}
             >
-              {showMobileMenu ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
             </Button>
+          ) : (
+            <Link to="/auth">
+              <Button size="sm">Sign In</Button>
+            </Link>
           )}
         </div>
+
+        {/* Mobile Menu Button */}
+        <button
+          className="md:hidden flex items-center"
+          onClick={toggleMenu}
+          aria-label={isMenuOpen ? "Close Menu" : "Open Menu"}
+        >
+          {isMenuOpen ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <Menu className="h-6 w-6" />
+          )}
+        </button>
       </div>
 
+      {/* Mobile Navigation */}
       <AnimatePresence>
-        {showMobileMenu && isMobile && (
+        {isMenuOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="border-t border-gray-100 overflow-hidden"
+            transition={{ duration: 0.2 }}
+            className="md:hidden mt-2 overflow-hidden"
           >
-            <div className="container max-w-7xl mx-auto px-4 py-4 flex flex-col gap-2">
-              {navLinks.map((link) => (
-                <Button
-                  key={link.href}
-                  variant={isActive(link.href) ? "secondary" : "ghost"}
-                  className="justify-start w-full"
-                  onClick={() => setShowMobileMenu(false)}
-                  asChild
+            <div className="flex flex-col space-y-2 pt-2 pb-3">
+              {filteredNavItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    "px-3 py-2 rounded-md text-base font-medium transition-colors",
+                    location.pathname === item.path
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground/60 hover:text-foreground hover:bg-accent"
+                  )}
+                  onClick={closeMenu}
                 >
-                  <Link to={link.href}>
-                    <link.icon className="h-4 w-4 mr-2" />
-                    {link.label}
-                  </Link>
-                </Button>
+                  {item.label}
+                </Link>
               ))}
+
+              {isAuthenticated ? (
+                <Button
+                  variant="ghost"
+                  className="justify-start"
+                  onClick={() => {
+                    logout();
+                    closeMenu();
+                  }}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              ) : (
+                <Link to="/auth" onClick={closeMenu}>
+                  <Button className="w-full">Sign In</Button>
+                </Link>
+              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </nav>
   );
 };
 
