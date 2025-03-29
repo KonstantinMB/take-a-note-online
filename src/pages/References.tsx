@@ -1,126 +1,171 @@
 
 import { useState, useEffect } from "react";
-import { Plus, Book, Search, Tag, X, ChevronRight } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import EmptyState from "@/components/EmptyState";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { Skeleton } from "@/components/ui/skeleton";
+import { motion, AnimatePresence } from "framer-motion";
 import ReferenceCard from "@/components/ReferenceCard";
 import ReferenceEditor from "@/components/ReferenceEditor";
-import { AnimatePresence, motion } from "framer-motion";
-import _ from "lodash";
+import EmptyState from "@/components/EmptyState";
 
 interface Reference {
   id: string;
   title: string;
   url: string;
-  description: string | null;
-  tags: string[] | null;
-  created_at: string;
+  description?: string;
+  tags?: string[];
+  createdAt: string;
 }
 
 const References = () => {
+  const { toast } = useToast();
+  const { user } = useAuth();
   const [references, setReferences] = useState<Reference[]>([]);
-  const [filteredReferences, setFilteredReferences] = useState<Reference[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [currentReference, setCurrentReference] = useState<Reference | undefined>();
   const [isLoading, setIsLoading] = useState(true);
-  const [showTags, setShowTags] = useState(false);
-  const [allTags, setAllTags] = useState<string[]>([]);
-  const { user, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [currentReference, setCurrentReference] = useState<Reference | undefined>(undefined);
 
+  // Fetch references when component mounts
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/auth");
-    }
-  }, [isAuthenticated, navigate]);
-
-  useEffect(() => {
-    const fetchReferences = async () => {
-      try {
-        setIsLoading(true);
-        
-        if (!user) return;
-
-        const { data, error } = await supabase
-          .from("reading_references")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        if (error) {
-          throw error;
-        }
-
-        setReferences(data || []);
-      } catch (error) {
-        console.error("Error fetching references:", error);
-        toast.error("Failed to load reading references");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     if (user) {
       fetchReferences();
     }
   }, [user]);
 
-  // Extract all unique tags when references change
-  useEffect(() => {
-    const tags = references.reduce((acc: string[], reference) => {
-      if (reference.tags && reference.tags.length > 0) {
-        reference.tags.forEach(tag => {
-          if (!acc.includes(tag)) {
-            acc.push(tag);
-          }
-        });
-      }
-      return acc;
-    }, []);
-    
-    setAllTags(tags.sort());
-  }, [references]);
+  const fetchReferences = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("reading_references")
+        .select("*")
+        .eq("user_id", user?.id)
+        .order("created_at", { ascending: false });
 
-  useEffect(() => {
-    let filtered = [...references];
-    
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        ref => 
-          ref.title.toLowerCase().includes(query) ||
-          (ref.description && ref.description.toLowerCase().includes(query)) ||
-          ref.url.toLowerCase().includes(query) ||
-          (ref.tags && ref.tags.some(tag => tag.toLowerCase().includes(query)))
-      );
-    }
-    
-    if (selectedTag) {
-      filtered = filtered.filter(
-        ref => ref.tags && ref.tags.includes(selectedTag)
-      );
-    }
-    
-    setFilteredReferences(filtered);
-  }, [searchQuery, selectedTag, references]);
+      if (error) throw error;
 
-  const handleCreateReference = () => {
-    setCurrentReference(undefined);
-    setIsEditorOpen(true);
+      // Transform data to match our Reference interface
+      const formattedData = data.map(item => ({
+        id: item.id,
+        title: item.title,
+        url: item.url,
+        description: item.description || undefined,
+        tags: item.tags || [],
+        createdAt: item.created_at
+      }));
+
+      setReferences(formattedData);
+    } catch (error) {
+      console.error("Error fetching references:", error);
+      toast({
+        title: "Failed to load references",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleEditReference = (id: string) => {
-    const referenceToEdit = references.find(ref => ref.id === id);
-    if (referenceToEdit) {
-      setCurrentReference(referenceToEdit);
-      setIsEditorOpen(true);
+  // Filter references based on search query
+  const filteredReferences = references.filter(ref => {
+    const query = searchQuery.toLowerCase();
+    if (!query) return true;
+    
+    return (
+      ref.title.toLowerCase().includes(query) ||
+      ref.url.toLowerCase().includes(query) ||
+      (ref.description && ref.description.toLowerCase().includes(query)) ||
+      (ref.tags && ref.tags.some(tag => tag.toLowerCase().includes(query)))
+    );
+  });
+
+  const handleSaveReference = async (reference: {
+    id?: string;
+    title: string;
+    url: string;
+    description?: string;
+    tags?: string[];
+  }) => {
+    try {
+      if (reference.id) {
+        // Update existing reference
+        const { error } = await supabase
+          .from("reading_references")
+          .update({
+            title: reference.title,
+            url: reference.url,
+            description: reference.description,
+            tags: reference.tags,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", reference.id);
+
+        if (error) throw error;
+
+        // Update local state
+        setReferences(prevRefs => 
+          prevRefs.map(ref => 
+            ref.id === reference.id
+              ? {
+                  ...ref,
+                  title: reference.title,
+                  url: reference.url,
+                  description: reference.description,
+                  tags: reference.tags,
+                }
+              : ref
+          )
+        );
+
+        toast({
+          title: "Reference updated",
+          description: "Your reference has been successfully updated.",
+        });
+      } else {
+        // Create new reference
+        const { data, error } = await supabase
+          .from("reading_references")
+          .insert({
+            title: reference.title,
+            url: reference.url,
+            description: reference.description,
+            tags: reference.tags,
+            user_id: user?.id,
+          })
+          .select("*")
+          .single();
+
+        if (error) throw error;
+
+        // Add to local state
+        const newReference: Reference = {
+          id: data.id,
+          title: data.title,
+          url: data.url,
+          description: data.description || undefined,
+          tags: data.tags || [],
+          createdAt: data.created_at,
+        };
+
+        setReferences(prevRefs => [newReference, ...prevRefs]);
+
+        toast({
+          title: "Reference added",
+          description: "Your reference has been successfully added.",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving reference:", error);
+      toast({
+        title: "Failed to save reference",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -131,260 +176,133 @@ const References = () => {
         .delete()
         .eq("id", id);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
-      setReferences(prev => prev.filter(ref => ref.id !== id));
-      toast.success("Reference deleted");
+      // Remove from local state
+      setReferences(prevRefs => prevRefs.filter(ref => ref.id !== id));
+
+      toast({
+        title: "Reference deleted",
+        description: "Your reference has been successfully deleted.",
+      });
     } catch (error) {
       console.error("Error deleting reference:", error);
-      toast.error("Failed to delete reference");
+      toast({
+        title: "Failed to delete reference",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleSaveReference = async (reference: { 
-    id?: string; 
-    title: string; 
-    url: string; 
-    description?: string;
-    tags?: string[];
-  }) => {
-    try {
-      if (!user) {
-        toast.error("You must be logged in to save references");
-        return;
-      }
-
-      if (reference.id) {
-        const { error } = await supabase
-          .from("reading_references")
-          .update({
-            title: reference.title,
-            url: reference.url,
-            description: reference.description || null,
-            tags: reference.tags || null,
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", reference.id);
-
-        if (error) {
-          throw error;
-        }
-
-        setReferences(prevRefs =>
-          prevRefs.map(ref =>
-            ref.id === reference.id
-              ? { 
-                  ...ref, 
-                  title: reference.title, 
-                  url: reference.url,
-                  description: reference.description || null,
-                  tags: reference.tags || null
-                }
-              : ref
-          )
-        );
-        
-        toast.success("Reference updated");
-      } else {
-        const { data, error } = await supabase
-          .from("reading_references")
-          .insert({
-            title: reference.title,
-            url: reference.url,
-            description: reference.description || null,
-            tags: reference.tags || null,
-            user_id: user.id
-          })
-          .select();
-
-        if (error) {
-          throw error;
-        }
-
-        if (data && data.length > 0) {
-          setReferences(prevRefs => [data[0], ...prevRefs]);
-        }
-        
-        toast.success("Reference saved");
-      }
-    } catch (error) {
-      console.error("Error saving reference:", error);
-      toast.error("Failed to save reference");
-    }
-  };
-
-  const clearTagFilter = () => {
-    setSelectedTag(null);
+  const handleEditReference = (id: string) => {
+    const reference = references.find(ref => ref.id === id);
+    setCurrentReference(reference);
+    setEditorOpen(true);
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="page-container max-w-[1400px] mx-auto px-4 sm:px-6 py-8"
-    >
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <motion.h1 
-          initial={{ x: -20 }}
-          animate={{ x: 0 }}
-          className="text-2xl font-bold"
-        >
-          Reading References
-        </motion.h1>
-        <motion.div
-          initial={{ x: 20 }}
-          animate={{ x: 0 }}
-        >
-          <Button onClick={handleCreateReference} size="sm" className="w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" />
-            New Reference
-          </Button>
-        </motion.div>
-      </div>
-
-      <motion.div 
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="mb-6"
-      >
-        <div className="mb-4 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Search references..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-white border border-gray-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-
-        {allTags.length > 0 && (
-          <div className="mb-6">
-            <motion.div 
-              className="flex items-center mb-2 cursor-pointer bg-gray-50 p-2 rounded-lg" 
-              onClick={() => setShowTags(!showTags)}
-              whileHover={{ backgroundColor: "#F3F4F6" }}
-            >
-              <Tag className="h-4 w-4 mr-2 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">Tags</span>
-              <motion.div
-                animate={{ rotate: showTags ? 90 : 0 }}
-                transition={{ duration: 0.2 }}
+    <div className="container max-w-6xl py-8">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Reading References</h1>
+        <p className="text-muted-foreground mb-6">
+          Save and organize links to articles, papers, and resources you want to read later.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search references..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
-                <ChevronRight className="h-4 w-4 ml-1 text-gray-500" />
-              </motion.div>
-              
-              {selectedTag && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    clearTagFilter();
-                  }} 
-                  className="ml-2 h-6 px-2 text-xs"
-                >
-                  <X className="h-3 w-3 mr-1" />
-                  Clear filter
-                </Button>
-              )}
-            </motion.div>
-            
-            <AnimatePresence>
-              {showTags && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="flex flex-wrap gap-2 ml-6 mt-2 mb-2">
-                    {allTags.map(tag => (
-                      <motion.span
-                        key={tag}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setSelectedTag(prev => prev === tag ? null : tag)}
-                        className={`cursor-pointer text-xs px-2 py-1 rounded-full transition-colors ${
-                          selectedTag === tag 
-                            ? 'bg-blue-500 text-white' 
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {tag}
-                      </motion.span>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
-        )}
-      </motion.div>
+          <Button onClick={() => {
+            setCurrentReference(undefined);
+            setEditorOpen(true);
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Reference
+          </Button>
+        </div>
+      </header>
 
       {isLoading ? (
-        <div className="flex justify-center items-center py-20">
-          <motion.div 
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="text-gray-400"
-          >
-            Loading references...
-          </motion.div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="p-4 border rounded-lg">
+              <Skeleton className="h-6 w-3/4 mb-3" />
+              <Skeleton className="h-4 w-full mb-2" />
+              <Skeleton className="h-16 w-full mb-3" />
+              <div className="flex gap-2 mb-3">
+                <Skeleton className="h-6 w-16 rounded-full" />
+                <Skeleton className="h-6 w-16 rounded-full" />
+              </div>
+              <Skeleton className="h-4 w-1/3 mt-2" />
+            </div>
+          ))}
         </div>
-      ) : filteredReferences.length > 0 ? (
-        <ScrollArea className="h-[calc(100vh-280px)]">
-          <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-1">
-            <AnimatePresence>
-              {filteredReferences.map((reference, index) => (
-                <ReferenceCard
-                  key={reference.id}
-                  id={reference.id}
-                  title={reference.title}
-                  url={reference.url}
-                  description={reference.description || undefined}
-                  tags={reference.tags || undefined}
-                  createdAt={reference.created_at}
-                  onEdit={handleEditReference}
-                  onDelete={handleDeleteReference}
-                  index={index}
-                />
-              ))}
-            </AnimatePresence>
-          </motion.div>
-        </ScrollArea>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+      ) : filteredReferences.length === 0 ? (
+        searchQuery ? (
           <EmptyState
-            icon={<Book className="h-8 w-8" />}
-            title={searchQuery || selectedTag ? "No matching references found" : "No references yet"}
-            description={
-              searchQuery || selectedTag
-                ? "Try adjusting your search query or tag filter."
-                : "Add your first reading reference to get started."
-            }
+            title="No matching references"
+            description="Try adjusting your search query."
+            icon={<Search className="h-12 w-12" />}
+          />
+        ) : (
+          <EmptyState
+            title="No references yet"
+            description="Add your first reading reference to get started."
+            icon={<Plus className="h-12 w-12" />}
             action={
-              <Button onClick={handleCreateReference} size="sm">
+              <Button onClick={() => {
+                setCurrentReference(undefined);
+                setEditorOpen(true);
+              }}>
                 <Plus className="h-4 w-4 mr-2" />
-                New Reference
+                Add First Reference
               </Button>
             }
-            className="py-20"
           />
-        </motion.div>
+        )
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <AnimatePresence>
+            {filteredReferences.map((reference, index) => (
+              <ReferenceCard
+                key={reference.id}
+                id={reference.id}
+                title={reference.title}
+                url={reference.url}
+                description={reference.description}
+                tags={reference.tags}
+                createdAt={reference.createdAt}
+                onEdit={handleEditReference}
+                onDelete={handleDeleteReference}
+                index={index}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
       )}
 
-      <ReferenceEditor
-        isOpen={isEditorOpen}
-        onClose={() => setIsEditorOpen(false)}
+      <ReferenceEditor 
+        isOpen={editorOpen}
+        onClose={() => setEditorOpen(false)}
         onSave={handleSaveReference}
         reference={currentReference}
       />
-    </motion.div>
+    </div>
   );
 };
 
