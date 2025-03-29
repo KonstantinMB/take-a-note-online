@@ -1,55 +1,38 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, FileText, Search, Tag, X, ChevronRight, ChevronDown } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import NoteCard from "@/components/NoteCard";
+import { Plus } from "lucide-react";
 import NoteEditor from "@/components/NoteEditor";
-import EmptyState from "@/components/EmptyState";
 import ConfettiEffect from "@/components/ConfettiEffect";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogFooter 
-} from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import CategoryBadge from "@/components/CategoryBadge";
-import { AnimatePresence, motion } from "framer-motion";
-
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  created_at: string;
-  category: string | null;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  color: string;
-}
+import { motion } from "framer-motion";
+import SearchBar from "@/features/notes/SearchBar";
+import CategoryFilter from "@/features/notes/CategoryFilter";
+import NotesList from "@/features/notes/NotesList";
+import CreateCategoryDialog from "@/features/notes/CreateCategoryDialog";
+import useNotesData from "@/features/notes/useNotesData";
 
 const Notes = () => {
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [filteredNotes, setFilteredNotes] = useState<Note[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const {
+    notes,
+    filteredNotes,
+    categories,
+    isLoading,
+    searchQuery,
+    selectedCategory,
+    setSearchQuery,
+    setSelectedCategory,
+    handleDeleteNote,
+    handleSaveNote,
+    handleCreateCategory,
+  } = useNotesData();
+
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [currentNote, setCurrentNote] = useState<Note | undefined>();
-  const [isLoading, setIsLoading] = useState(true);
+  const [currentNote, setCurrentNote] = useState<any | undefined>();
   const [showConfetti, setShowConfetti] = useState(false);
-  const [showCategories, setShowCategories] = useState(false);
   const [isNewCategoryOpen, setIsNewCategoryOpen] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryColor, setNewCategoryColor] = useState("#D3E4FD"); // Default soft blue
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -57,78 +40,6 @@ const Notes = () => {
       navigate("/auth");
     }
   }, [isAuthenticated, navigate]);
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from("note_categories")
-          .select("*")
-          .order("name");
-          
-        if (error) throw error;
-        
-        setCategories(data || []);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-        toast.error("Failed to load categories");
-      }
-    };
-    
-    if (user) {
-      fetchCategories();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    const fetchNotes = async () => {
-      try {
-        setIsLoading(true);
-        
-        if (!user) return;
-
-        const { data, error } = await supabase
-          .from("notes")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        if (error) {
-          throw error;
-        }
-
-        setNotes(data || []);
-      } catch (error) {
-        console.error("Error fetching notes:", error);
-        toast.error("Failed to load notes");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (user) {
-      fetchNotes();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    let filtered = [...notes];
-    
-    if (searchQuery) {
-      filtered = filtered.filter(
-        note => 
-          note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          note.content.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    
-    if (selectedCategory) {
-      filtered = filtered.filter(note => note.category === selectedCategory);
-    }
-    
-    setFilteredNotes(filtered);
-  }, [searchQuery, selectedCategory, notes]);
 
   const handleCreateNote = () => {
     setCurrentNote(undefined);
@@ -143,147 +54,20 @@ const Notes = () => {
     }
   };
 
-  const handleDeleteNote = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("notes")
-        .delete()
-        .eq("id", id);
-
-      if (error) {
-        throw error;
-      }
-
-      setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
-      toast.success("Note deleted");
-    } catch (error) {
-      console.error("Error deleting note:", error);
-      toast.error("Failed to delete note");
+  const handleSaveNoteWithConfetti = async (note: any) => {
+    const isNewNote = await handleSaveNote(note);
+    if (isNewNote) {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 1000);
     }
   };
 
-  const handleSaveNote = async (note: { id?: string; title: string; content: string; category?: string | null }) => {
-    try {
-      if (!user) {
-        toast.error("You must be logged in to save notes");
-        return;
-      }
-
-      let isNewNote = false;
-      if (note.id) {
-        const { error } = await supabase
-          .from("notes")
-          .update({
-            title: note.title,
-            content: note.content,
-            category: note.category,
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", note.id);
-
-        if (error) {
-          throw error;
-        }
-
-        setNotes(prevNotes =>
-          prevNotes.map(n =>
-            n.id === note.id
-              ? { ...n, title: note.title, content: note.content, category: note.category }
-              : n
-          )
-        );
-        
-        toast.success("Note updated");
-      } else {
-        isNewNote = true;
-        const { data, error } = await supabase
-          .from("notes")
-          .insert({
-            title: note.title,
-            content: note.content,
-            category: note.category,
-            user_id: user.id
-          })
-          .select();
-
-        if (error) {
-          throw error;
-        }
-
-        if (data && data.length > 0) {
-          setNotes(prevNotes => [data[0], ...prevNotes]);
-        }
-        
-        toast.success("Note created");
-        
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 100);
-      }
-    } catch (error) {
-      console.error("Error saving note:", error);
-      toast.error("Failed to save note");
+  const handleCreateCategorySubmit = async (name: string, color: string) => {
+    const success = await handleCreateCategory(name, color);
+    if (success) {
+      setIsNewCategoryOpen(false);
     }
   };
-
-  const handleCreateCategory = async () => {
-    if (!newCategoryName.trim()) {
-      toast.error("Please enter a category name");
-      return;
-    }
-
-    if (!user) {
-      toast.error("You must be logged in to create categories");
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from("note_categories")
-        .insert({
-          name: newCategoryName.trim(),
-          color: newCategoryColor,
-          user_id: user.id
-        })
-        .select();
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        setCategories(prev => [...prev, data[0]]);
-        toast.success("Category created");
-        setNewCategoryName("");
-        setIsNewCategoryOpen(false);
-      }
-    } catch (error) {
-      console.error("Error creating category:", error);
-      toast.error("Failed to create category");
-    }
-  };
-
-  const getCategoryInfo = (categoryId: string | null) => {
-    if (!categoryId) return { name: "General", color: "#9b87f5" };
-    
-    const category = categories.find(c => c.id === categoryId);
-    return {
-      name: category?.name || "General",
-      color: category?.color || "#9b87f5"
-    };
-  };
-
-  const clearCategoryFilter = () => {
-    setSelectedCategory(null);
-  };
-
-  const softColors = [
-    "#F2FCE2", // Soft Green
-    "#FEF7CD", // Soft Yellow
-    "#FEC6A1", // Soft Orange
-    "#E5DEFF", // Soft Purple
-    "#FFDEE2", // Soft Pink
-    "#FDE1D3", // Soft Peach
-    "#D3E4FD", // Soft Blue
-    "#F1F0FB", // Soft Gray
-  ];
 
   return (
     <motion.div 
@@ -317,205 +101,41 @@ const Notes = () => {
         animate={{ y: 0, opacity: 1 }}
         className="mb-6"
       >
-        <div className="mb-4 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Search notes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-white border border-gray-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
+        <SearchBar 
+          searchQuery={searchQuery} 
+          onSearchChange={setSearchQuery} 
+        />
 
-        <div className="mb-6">
-          <motion.div 
-            className="flex items-center mb-2 cursor-pointer bg-gray-50 p-2 rounded-lg" 
-            onClick={() => setShowCategories(!showCategories)}
-            whileHover={{ backgroundColor: "#F3F4F6" }}
-          >
-            <Tag className="h-4 w-4 mr-2 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Categories</span>
-            <motion.div
-              animate={{ rotate: showCategories ? 90 : 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <ChevronRight className="h-4 w-4 ml-1 text-gray-500" />
-            </motion.div>
-            
-            {selectedCategory && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  clearCategoryFilter();
-                }} 
-                className="ml-2 h-6 px-2 text-xs"
-              >
-                <X className="h-3 w-3 mr-1" />
-                Clear filter
-              </Button>
-            )}
-          </motion.div>
-          
-          <AnimatePresence>
-            {showCategories && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="flex flex-wrap gap-2 ml-6 mt-2 mb-2">
-                  {categories.map(category => (
-                    <motion.div
-                      key={category.id}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <CategoryBadge
-                        name={category.name}
-                        color={category.color}
-                        className={selectedCategory === category.id ? "ring-2 ring-black/20" : "opacity-80 hover:opacity-100"}
-                        onClick={() => setSelectedCategory(prev => prev === category.id ? null : category.id)}
-                      />
-                    </motion.div>
-                  ))}
-                  
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-7 px-2 rounded-full"
-                      onClick={() => setIsNewCategoryOpen(true)}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </motion.div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        <CategoryFilter 
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+          onCreateCategory={() => setIsNewCategoryOpen(true)}
+        />
       </motion.div>
 
-      {isLoading ? (
-        <div className="flex justify-center items-center py-20">
-          <motion.div 
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="text-gray-400"
-          >
-            Loading notes...
-          </motion.div>
-        </div>
-      ) : filteredNotes.length > 0 ? (
-        <ScrollArea className="h-[calc(100vh-280px)]">
-          <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-1">
-            <AnimatePresence>
-              {filteredNotes.map((note, index) => {
-                const { name, color } = getCategoryInfo(note.category);
-                return (
-                  <NoteCard
-                    key={note.id}
-                    id={note.id}
-                    title={note.title}
-                    content={note.content}
-                    createdAt={note.created_at}
-                    category={note.category}
-                    categoryName={name}
-                    categoryColor={color}
-                    onEdit={handleEditNote}
-                    onDelete={handleDeleteNote}
-                    index={index}
-                  />
-                );
-              })}
-            </AnimatePresence>
-          </motion.div>
-        </ScrollArea>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <EmptyState
-            icon={<FileText className="h-8 w-8" />}
-            title={searchQuery || selectedCategory ? "No matching notes found" : "No notes yet"}
-            description={
-              searchQuery || selectedCategory
-                ? "Try adjusting your search query or category filter."
-                : "Create your first note to get started."
-            }
-            action={
-              <Button onClick={handleCreateNote} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                New Note
-              </Button>
-            }
-            className="py-20"
-          />
-        </motion.div>
-      )}
+      <NotesList 
+        notes={notes}
+        filteredNotes={filteredNotes}
+        isLoading={isLoading}
+        searchQuery={searchQuery}
+        selectedCategory={selectedCategory}
+        categories={categories}
+        onEditNote={handleEditNote}
+        onDeleteNote={handleDeleteNote}
+        onCreateNote={handleCreateNote}
+      />
 
-      <Dialog open={isNewCategoryOpen} onOpenChange={setIsNewCategoryOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Create New Category</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <label htmlFor="name" className="text-sm font-medium">
-                Category Name
-              </label>
-              <Input
-                id="name"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="Enter category name"
-              />
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">
-                Select Color
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {softColors.map((color) => (
-                  <div 
-                    key={color}
-                    onClick={() => setNewCategoryColor(color)}
-                    className={`w-8 h-8 rounded-full cursor-pointer transition-all ${
-                      newCategoryColor === color ? "ring-2 ring-black/20 scale-110" : ""
-                    }`}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
-              </div>
-              <div className="mt-2 flex items-center gap-2">
-                <div 
-                  className="w-8 h-8 rounded-full" 
-                  style={{ backgroundColor: newCategoryColor }} 
-                />
-                <span className="text-sm">Preview: </span>
-                <CategoryBadge name={newCategoryName || "Category"} color={newCategoryColor} />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsNewCategoryOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateCategory}>
-              Create Category
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CreateCategoryDialog 
+        isOpen={isNewCategoryOpen}
+        onClose={() => setIsNewCategoryOpen(false)}
+        onSave={handleCreateCategorySubmit}
+      />
 
       <NoteEditor
         isOpen={isEditorOpen}
         onClose={() => setIsEditorOpen(false)}
-        onSave={handleSaveNote}
+        onSave={handleSaveNoteWithConfetti}
         note={currentNote}
         categories={categories}
       />
