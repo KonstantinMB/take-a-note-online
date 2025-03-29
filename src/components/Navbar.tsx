@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, Menu, X } from "lucide-react";
@@ -36,7 +35,7 @@ const Navbar = () => {
     <nav className="py-4 px-6 border-b border-border bg-background sticky top-0 z-10">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <Link to="/" className="font-bold text-xl">
-          Organizer
+          TakeANote
         </Link>
 
         {/* Desktop Navigation */}
