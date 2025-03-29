@@ -38,6 +38,7 @@ const NotesList = ({
   isLoading,
   searchQuery,
   selectedCategory,
+  categories,
   onEditNote,
   onDeleteNote,
   onCreateNote,
@@ -98,7 +99,8 @@ const NotesList = ({
       <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-1">
         <AnimatePresence>
           {filteredNotes.map((note, index) => {
-            const { name, color } = getCategoryInfo(note.category, []);
+            // Pass the categories array to get the correct category info
+            const { name, color } = getCategoryInfo(note.category, categories);
             return (
               <NoteCard
                 key={note.id}
