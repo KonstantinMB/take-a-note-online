@@ -17,7 +17,6 @@ interface Reference {
   title: string;
   url: string;
   description?: string;
-  tags?: string[];
   createdAt: string;
 }
 
@@ -54,7 +53,6 @@ const References = () => {
         title: item.title,
         url: item.url,
         description: item.description || undefined,
-        tags: item.tags || [],
         createdAt: item.created_at
       }));
 
@@ -79,8 +77,7 @@ const References = () => {
     return (
       ref.title.toLowerCase().includes(query) ||
       ref.url.toLowerCase().includes(query) ||
-      (ref.description && ref.description.toLowerCase().includes(query)) ||
-      (ref.tags && ref.tags.some(tag => tag.toLowerCase().includes(query)))
+      (ref.description && ref.description.toLowerCase().includes(query))
     );
   });
 
@@ -89,7 +86,6 @@ const References = () => {
     title: string;
     url: string;
     description?: string;
-    tags?: string[];
   }) => {
     try {
       if (reference.id) {
@@ -100,7 +96,6 @@ const References = () => {
             title: reference.title,
             url: reference.url,
             description: reference.description,
-            tags: reference.tags,
             updated_at: new Date().toISOString(),
           })
           .eq("id", reference.id);
@@ -116,7 +111,6 @@ const References = () => {
                   title: reference.title,
                   url: reference.url,
                   description: reference.description,
-                  tags: reference.tags,
                 }
               : ref
           )
@@ -134,7 +128,6 @@ const References = () => {
             title: reference.title,
             url: reference.url,
             description: reference.description,
-            tags: reference.tags,
             user_id: user?.id,
           })
           .select("*")
@@ -148,7 +141,6 @@ const References = () => {
           title: data.title,
           url: data.url,
           description: data.description || undefined,
-          tags: data.tags || [],
           createdAt: data.created_at,
         };
 
@@ -244,10 +236,6 @@ const References = () => {
               <Skeleton className="h-6 w-3/4 mb-3" />
               <Skeleton className="h-4 w-full mb-2" />
               <Skeleton className="h-16 w-full mb-3" />
-              <div className="flex gap-2 mb-3">
-                <Skeleton className="h-6 w-16 rounded-full" />
-                <Skeleton className="h-6 w-16 rounded-full" />
-              </div>
               <Skeleton className="h-4 w-1/3 mt-2" />
             </div>
           ))}
@@ -285,7 +273,6 @@ const References = () => {
                 title={reference.title}
                 url={reference.url}
                 description={reference.description}
-                tags={reference.tags}
                 createdAt={reference.createdAt}
                 onEdit={handleEditReference}
                 onDelete={handleDeleteReference}

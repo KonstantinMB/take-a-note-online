@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { ExternalLink, Edit, Trash, Check, Tag } from "lucide-react";
+import { ExternalLink, Edit, Trash, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +10,6 @@ interface ReferenceCardProps {
   title: string;
   url: string;
   description?: string;
-  tags?: string[];
   createdAt: string;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
@@ -22,7 +21,6 @@ const ReferenceCard = ({
   title,
   url,
   description,
-  tags = [],
   createdAt,
   onEdit,
   onDelete,
@@ -135,16 +133,6 @@ const ReferenceCard = ({
         {truncatedDescription && (
           <div className="text-sm text-gray-600">
             {truncatedDescription}
-          </div>
-        )}
-        
-        {tags && tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1">
-            {tags.map((tag, i) => (
-              <span key={i} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-                {tag}
-              </span>
-            ))}
           </div>
         )}
         
