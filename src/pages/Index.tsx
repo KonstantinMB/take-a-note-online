@@ -59,7 +59,7 @@ const Index = () => {
     }
   };
 
-  const backgroundBlur = {
+  const backgroundBlur: React.CSSProperties = {
     backgroundImage: "radial-gradient(circle at 50% 0%, rgba(155, 135, 245, 0.1), transparent 60%)",
     position: "absolute",
     top: 0,
@@ -67,8 +67,33 @@ const Index = () => {
     width: "100%",
     height: "100%",
     zIndex: -1,
-    pointerEvents: "none"
+    pointerEvents: "none" as const
   };
+
+  // Text animation variants
+  const textRevealVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { type: "spring", stiffness: 50, delay: 0.2 }
+    }
+  };
+
+  const headingCharVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: { delay: i * 0.05, duration: 0.5 }
+    })
+  };
+
+  // Split heading text into characters for animation
+  const headingText1 = "Capture your thoughts,";
+  const headingText2 = "organize your life";
+  const headingChars1 = headingText1.split("");
+  const headingChars2 = headingText2.split("");
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -102,6 +127,20 @@ const Index = () => {
         }}
       />
 
+      <motion.div
+        className="hidden lg:block absolute top-60 right-16 w-24 h-24 rounded-full bg-gradient-to-r from-blue-50 to-green-50 mix-blend-multiply opacity-80"
+        animate={{
+          x: [0, 15, 0],
+          y: [0, -10, 0]
+        }}
+        transition={{
+          duration: 9,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 0.5
+        }}
+      />
+
       {/* Hero Section */}
       <motion.section 
         className="py-24 px-4 relative z-10"
@@ -120,6 +159,8 @@ const Index = () => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
             className="inline-block mb-4"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-1 rounded-full inline-block">
               <div className="bg-white dark:bg-gray-900 rounded-full px-4 py-1 flex items-center">
@@ -131,16 +172,45 @@ const Index = () => {
             </div>
           </motion.div>
 
-          <motion.h1 
-            className="text-4xl sm:text-6xl font-bold mb-6 tracking-tight bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent"
-            variants={itemVariants}
-          >
-            Capture your thoughts,<br />organize your life
-          </motion.h1>
+          <div className="mb-6 overflow-hidden">
+            <motion.h1 className="text-4xl sm:text-6xl font-bold tracking-tight relative inline-block">
+              <span className="sr-only">{headingText1}</span>
+              <span aria-hidden="true" className="block">
+                {headingChars1.map((char, i) => (
+                  <motion.span
+                    key={i}
+                    custom={i}
+                    variants={headingCharVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="inline-block bg-gradient-to-r from-gray-900 via-purple-800 to-gray-900 bg-clip-text text-transparent"
+                  >
+                    {char === " " ? "\u00A0" : char}
+                  </motion.span>
+                ))}
+              </span>
+              <span aria-hidden="true" className="block mt-2">
+                {headingChars2.map((char, i) => (
+                  <motion.span
+                    key={i}
+                    custom={i + 5}
+                    variants={headingCharVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="inline-block bg-gradient-to-r from-gray-900 via-purple-800 to-gray-900 bg-clip-text text-transparent"
+                  >
+                    {char === " " ? "\u00A0" : char}
+                  </motion.span>
+                ))}
+              </span>
+            </motion.h1>
+          </div>
 
           <motion.p 
             className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto"
-            variants={itemVariants}
+            variants={textRevealVariants}
+            initial="hidden"
+            animate="visible"
           >
             A beautifully simple way to keep notes and manage your tasks in one place.
             Focus on what matters with our distraction-free experience.
@@ -148,9 +218,12 @@ const Index = () => {
 
           <motion.div 
             className="flex flex-wrap justify-center gap-4"
-            variants={itemVariants}
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
           >
             <motion.div
+              variants={itemVariants}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -163,6 +236,7 @@ const Index = () => {
             </motion.div>
 
             <motion.div
+              variants={itemVariants}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -193,13 +267,31 @@ const Index = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
           >
-            <div className="inline-block mb-3">
+            <motion.div 
+              className="inline-block mb-3"
+              whileHover={{ scale: 1.05, rotate: 2 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
               <span className="text-sm font-medium bg-indigo-50 text-indigo-700 rounded-full px-4 py-1.5">Features</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-6">Everything you need, nothing you don't</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            </motion.div>
+            <motion.h2 
+              className="text-3xl sm:text-4xl font-bold mb-6 bg-gradient-to-r from-indigo-600 via-purple-500 to-indigo-600 bg-clip-text text-transparent"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.7 }}
+              viewport={{ once: true }}
+            >
+              Everything you need, nothing you don't
+            </motion.h2>
+            <motion.p 
+              className="text-lg text-gray-600 max-w-2xl mx-auto"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.7 }}
+              viewport={{ once: true }}
+            >
               A minimalist note-taking experience designed to help you focus on capturing ideas and staying organized.
-            </p>
+            </motion.p>
           </motion.div>
           
           <motion.div 
@@ -216,9 +308,13 @@ const Index = () => {
               whileHover="hover"
             >
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-indigo-50 to-transparent rounded-bl-full opacity-70"></div>
-              <div className="w-14 h-14 bg-primary/5 rounded-full flex items-center justify-center mb-6">
+              <motion.div 
+                className="w-14 h-14 bg-primary/5 rounded-full flex items-center justify-center mb-6"
+                whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                transition={{ duration: 0.5 }}
+              >
                 <FileText className="h-7 w-7 text-primary" />
-              </div>
+              </motion.div>
               <h3 className="text-xl font-semibold mb-3">Simple Notes</h3>
               <p className="text-gray-600">
                 Create, edit, and organize your notes with a clean and intuitive interface that keeps you focused.
@@ -232,9 +328,13 @@ const Index = () => {
               whileHover="hover"
             >
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-50 to-transparent rounded-bl-full opacity-70"></div>
-              <div className="w-14 h-14 bg-primary/5 rounded-full flex items-center justify-center mb-6">
+              <motion.div 
+                className="w-14 h-14 bg-primary/5 rounded-full flex items-center justify-center mb-6"
+                whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                transition={{ duration: 0.5 }}
+              >
                 <CheckSquare className="h-7 w-7 text-primary" />
-              </div>
+              </motion.div>
               <h3 className="text-xl font-semibold mb-3">Task Management</h3>
               <p className="text-gray-600">
                 Stay organized with a simple to-do list that helps you track your tasks and priorities effectively.
@@ -248,9 +348,13 @@ const Index = () => {
               whileHover="hover"
             >
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-50 to-transparent rounded-bl-full opacity-70"></div>
-              <div className="w-14 h-14 bg-primary/5 rounded-full flex items-center justify-center mb-6">
+              <motion.div 
+                className="w-14 h-14 bg-primary/5 rounded-full flex items-center justify-center mb-6"
+                whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                transition={{ duration: 0.5 }}
+              >
                 <Clock className="h-7 w-7 text-primary" />
-              </div>
+              </motion.div>
               <h3 className="text-xl font-semibold mb-3">Save Time</h3>
               <p className="text-gray-600">
                 Quick and responsive interface lets you capture thoughts instantly without interrupting your workflow.
@@ -264,9 +368,13 @@ const Index = () => {
               whileHover="hover"
             >
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-green-50 to-transparent rounded-bl-full opacity-70"></div>
-              <div className="w-14 h-14 bg-primary/5 rounded-full flex items-center justify-center mb-6">
+              <motion.div 
+                className="w-14 h-14 bg-primary/5 rounded-full flex items-center justify-center mb-6"
+                whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                transition={{ duration: 0.5 }}
+              >
                 <Shield className="h-7 w-7 text-primary" />
-              </div>
+              </motion.div>
               <h3 className="text-xl font-semibold mb-3">Secure & Private</h3>
               <p className="text-gray-600">
                 Your data is stored securely and never shared with third parties, giving you peace of mind.
@@ -295,20 +403,49 @@ const Index = () => {
             delay: 0.2 
           }}
         >
-          <h2 className="text-3xl sm:text-4xl font-bold mb-6">Ready to get started?</h2>
-          <p className="text-lg text-gray-600 mb-10 max-w-2xl mx-auto">
+          <motion.h2 
+            className="text-3xl sm:text-4xl font-bold mb-6 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent"
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+          >
+            Ready to get started?
+          </motion.h2>
+          <motion.p 
+            className="text-lg text-gray-600 mb-10 max-w-2xl mx-auto"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+          >
             Begin your journey to a more organized digital life today with our simple yet powerful tool.
-          </p>
+          </motion.p>
 
           <motion.div
             className="inline-block"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.6, type: "spring", stiffness: 100 }}
           >
             <Button asChild size="lg" className="rounded-full px-8 py-6 text-lg shadow-lg bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600">
               <Link to="/notes">
                 Get started now
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <motion.div
+                  animate={{
+                    x: [0, 4, 0],
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    repeatType: "loop",
+                  }}
+                >
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </motion.div>
               </Link>
             </Button>
           </motion.div>
@@ -319,9 +456,15 @@ const Index = () => {
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
           >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <motion.svg 
+              className="w-4 h-4" 
+              fill="currentColor" 
+              viewBox="0 0 24 24"
+              animate={{ rotate: [0, 10, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            >
               <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm0-2a8 8 0 100-16 8 8 0 000 16zm1-8.41l2.54 2.53a1 1 0 01-1.42 1.42l-3.54-3.54a1 1 0 010-1.41l3.54-3.54a1 1 0 111.42 1.42L13 10.58V16a1 1 0 11-2 0V9a1 1 0 112 0v2.59z" />
-            </svg>
+            </motion.svg>
             <span>No credit card required</span>
           </motion.div>
         </motion.div>
@@ -343,11 +486,25 @@ const Index = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <h2 className="text-3xl font-bold mb-4">Let's Connect</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <motion.h2 
+              className="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+            >
+              Let's Connect
+            </motion.h2>
+            <motion.p 
+              className="text-lg text-gray-600 max-w-2xl mx-auto"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+            >
               I'm always interested in new opportunities and collaborations.
               Feel free to reach out to me on LinkedIn.
-            </p>
+            </motion.p>
           </motion.div>
           
           <motion.div 
@@ -362,7 +519,7 @@ const Index = () => {
               target="_blank" 
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 bg-[#0077B5] hover:bg-[#0069a2] text-white px-6 py-3 rounded-lg shadow-md transition-all duration-300"
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.05, boxShadow: "0px 5px 15px rgba(0, 0, 0, 0.1)" }}
               whileTap={{ scale: 0.95 }}
             >
               <Linkedin className="h-6 w-6" />
