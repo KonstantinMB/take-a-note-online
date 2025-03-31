@@ -12,6 +12,8 @@ interface TodoItemProps {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit: (id: string, text: string) => void;
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent<HTMLDivElement>, id: string) => void;
 }
 
 const TodoItem = ({ 
@@ -20,7 +22,9 @@ const TodoItem = ({
   completed, 
   onToggle, 
   onDelete, 
-  onEdit 
+  onEdit,
+  draggable = false,
+  onDragStart
 }: TodoItemProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState(text);
@@ -43,15 +47,26 @@ const TodoItem = ({
     setEditedText(text);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  };
+
   return (
     <div 
       className={cn(
         "group flex items-center justify-between p-3 border border-gray-100 rounded-lg bg-white transition-all duration-200",
         completed ? "bg-gray-50" : "",
-        isHovering ? "shadow-sm" : ""
+        isHovering ? "shadow-sm" : "",
+        draggable ? "cursor-grab active:cursor-grabbing" : ""
       )}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
+      draggable={draggable}
+      onDragStart={(e) => onDragStart && onDragStart(e, id)}
     >
       <div className="flex items-center gap-3 flex-1">
         <Checkbox 
@@ -70,6 +85,7 @@ const TodoItem = ({
             onChange={(e) => setEditedText(e.target.value)}
             className="flex-1 h-8 border-gray-200 input-focused"
             autoFocus
+            onKeyDown={handleKeyDown}
           />
         ) : (
           <label 

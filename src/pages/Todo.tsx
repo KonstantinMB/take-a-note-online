@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, CheckSquare, LayoutList } from "lucide-react";
+import { Plus, CheckSquare, LayoutList, MoveRight, Calendar } from "lucide-react";
 import TodoItem from "@/components/TodoItem";
 import EmptyState from "@/components/EmptyState";
 import ConfettiEffect from "@/components/ConfettiEffect";
@@ -11,13 +11,14 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { format, isToday, isYesterday } from "date-fns";
+import { format, isToday, isTomorrow, isYesterday, addDays } from "date-fns";
 
 interface Todo {
   id: string;
   text: string;
   completed: boolean;
   created_at: string;
+  due_date?: string;
 }
 
 interface GroupedTodos {
@@ -32,6 +33,7 @@ const TodoPage = () => {
   const [showConfetti, setShowConfetti] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [draggedTodo, setDraggedTodo] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -75,16 +77,22 @@ const TodoPage = () => {
     return true;
   });
 
+  const getTodayDate = () => new Date();
+  const getTomorrowDate = () => addDays(new Date(), 1);
+
   const groupedTodos = filteredTodos.reduce((groups: GroupedTodos, todo) => {
-    const date = new Date(todo.created_at);
+    // Check if todo has a due_date
+    let dateToUse = todo.due_date ? new Date(todo.due_date) : new Date(todo.created_at);
     let dateString: string;
     
-    if (isToday(date)) {
+    if (isToday(dateToUse)) {
       dateString = "Today";
-    } else if (isYesterday(date)) {
+    } else if (isTomorrow(dateToUse)) {
+      dateString = "Tomorrow";
+    } else if (isYesterday(dateToUse)) {
       dateString = "Yesterday";
     } else {
-      dateString = format(date, "MMMM d, yyyy");
+      dateString = format(dateToUse, "MMMM d, yyyy");
     }
     
     if (!groups[dateString]) {
@@ -95,25 +103,43 @@ const TodoPage = () => {
     return groups;
   }, {});
 
+  // Make sure "Today" and "Tomorrow" sections always exist
+  if (!groupedTodos["Today"]) {
+    groupedTodos["Today"] = [];
+  }
+  
+  if (!groupedTodos["Tomorrow"]) {
+    groupedTodos["Tomorrow"] = [];
+  }
+
   const sortedDates = Object.keys(groupedTodos).sort((a, b) => {
+    // Special cases first
     if (a === "Today") return -1;
     if (b === "Today") return 1;
     
-    if (a === "Yesterday" && b !== "Today") return -1;
-    if (b === "Yesterday" && a !== "Today") return 1;
+    if (a === "Tomorrow" && b !== "Today") return -1;
+    if (b === "Tomorrow" && a !== "Today") return 1;
     
+    if (a === "Yesterday" && b !== "Today" && b !== "Tomorrow") return -1;
+    if (b === "Yesterday" && a !== "Today" && a !== "Tomorrow") return 1;
+    
+    // Convert string dates to actual Date objects for comparison
     const dateA = a === "Today" 
-      ? new Date() 
-      : a === "Yesterday" 
-        ? new Date(new Date().setDate(new Date().getDate() - 1))
-        : new Date(a);
-        
+      ? getTodayDate()
+      : a === "Tomorrow"
+        ? getTomorrowDate()
+        : a === "Yesterday"
+          ? new Date(new Date().setDate(new Date().getDate() - 1))
+          : new Date(a);
+          
     const dateB = b === "Today" 
-      ? new Date() 
-      : b === "Yesterday" 
-        ? new Date(new Date().setDate(new Date().getDate() - 1))
-        : new Date(b);
-        
+      ? getTodayDate()
+      : b === "Tomorrow"
+        ? getTomorrowDate()
+        : b === "Yesterday"
+          ? new Date(new Date().setDate(new Date().getDate() - 1))
+          : new Date(b);
+          
     return dateB.getTime() - dateA.getTime();
   });
 
@@ -128,7 +154,8 @@ const TodoPage = () => {
         .insert({
           text: newTodoText.trim(),
           completed: false,
-          user_id: user.id
+          user_id: user.id,
+          due_date: new Date().toISOString() // Set to today by default
         })
         .select();
 
@@ -142,8 +169,6 @@ const TodoPage = () => {
       
       setNewTodoText("");
       toast.success("Task added");
-      
-      // Removed confetti trigger from here
     } catch (error) {
       console.error("Error adding todo:", error);
       toast.error("Failed to add task");
@@ -258,6 +283,64 @@ const TodoPage = () => {
     }
   };
 
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, id: string) => {
+    setDraggedTodo(id);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>, targetDate: string) => {
+    e.preventDefault();
+    
+    if (!draggedTodo) return;
+    
+    try {
+      const todoToMove = todos.find(todo => todo.id === draggedTodo);
+      if (!todoToMove) return;
+      
+      let dueDate: Date;
+      
+      if (targetDate === "Today") {
+        dueDate = getTodayDate();
+      } else if (targetDate === "Tomorrow") {
+        dueDate = getTomorrowDate();
+      } else if (targetDate === "Yesterday") {
+        dueDate = new Date(new Date().setDate(new Date().getDate() - 1));
+      } else {
+        dueDate = new Date(targetDate);
+      }
+      
+      const { error } = await supabase
+        .from("todos")
+        .update({
+          due_date: dueDate.toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", draggedTodo);
+
+      if (error) {
+        throw error;
+      }
+
+      setTodos(prevTodos =>
+        prevTodos.map(todo =>
+          todo.id === draggedTodo
+            ? { ...todo, due_date: dueDate.toISOString() }
+            : todo
+        )
+      );
+      
+      toast.success(`Task moved to ${targetDate}`);
+      setDraggedTodo(null);
+    } catch (error) {
+      console.error("Error moving todo:", error);
+      toast.error("Failed to move task");
+      setDraggedTodo(null);
+    }
+  };
+
   return (
     <div className="page-container">
       <ConfettiEffect isActive={showConfetti} />
@@ -318,20 +401,42 @@ const TodoPage = () => {
       ) : Object.keys(groupedTodos).length > 0 ? (
         <ScrollArea className="h-[calc(100vh-280px)]">
           {sortedDates.map(date => (
-            <div key={date} className="mb-6">
-              <h2 className="text-sm font-medium text-gray-500 mb-2">{date}</h2>
+            <div 
+              key={date} 
+              className="mb-6"
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, date)}
+            >
+              <div className="flex items-center mb-2">
+                <h2 className="text-sm font-medium text-gray-500">{date}</h2>
+                {date === "Today" && (
+                  <div className="ml-2 flex items-center text-xs text-gray-400">
+                    <span>Drag to move</span>
+                    <MoveRight className="h-3 w-3 mx-1" />
+                    <Calendar className="h-3 w-3" />
+                  </div>
+                )}
+              </div>
               <div className="space-y-2">
-                {groupedTodos[date].map((todo) => (
-                  <TodoItem
-                    key={todo.id}
-                    id={todo.id}
-                    text={todo.text}
-                    completed={todo.completed}
-                    onToggle={handleToggleTodo}
-                    onDelete={handleDeleteTodo}
-                    onEdit={handleEditTodo}
-                  />
-                ))}
+                {groupedTodos[date] && groupedTodos[date].length > 0 ? (
+                  groupedTodos[date].map((todo) => (
+                    <TodoItem
+                      key={todo.id}
+                      id={todo.id}
+                      text={todo.text}
+                      completed={todo.completed}
+                      onToggle={handleToggleTodo}
+                      onDelete={handleDeleteTodo}
+                      onEdit={handleEditTodo}
+                      draggable={true}
+                      onDragStart={handleDragStart}
+                    />
+                  ))
+                ) : (
+                  <div className="text-sm text-gray-400 py-2 px-3 border border-dashed border-gray-200 rounded-lg text-center">
+                    No tasks for {date.toLowerCase()}
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -382,4 +487,3 @@ const TodoPage = () => {
 };
 
 export default TodoPage;
-
