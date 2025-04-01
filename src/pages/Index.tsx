@@ -1,5 +1,4 @@
-
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { FileText, CheckSquare, ArrowRight, Linkedin, Sparkles, Rocket, Target } from "lucide-react";
@@ -7,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 const Index = () => {
-  // Improved intersection observer setup for smoother animations
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -26,7 +24,6 @@ const Index = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Enhanced animation variants for smoother transitions
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -63,7 +60,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen overflow-x-hidden">
-      {/* Hero Section with Enhanced Animations - Fixed positioning */}
       <motion.section 
         className="py-16 md:py-24 px-4 relative bg-gradient-to-b from-white to-gray-50 min-h-[80vh] flex items-center"
         initial={{ opacity: 0 }}
@@ -158,7 +154,6 @@ const Index = () => {
         </motion.div>
       </motion.section>
       
-      {/* Features Section with Better Card Effects */}
       <motion.section 
         className="py-20 px-4 bg-gradient-to-b from-gray-50 to-white relative"
         initial={{ opacity: 0 }}
@@ -244,7 +239,6 @@ const Index = () => {
         </div>
       </motion.section>
 
-      {/* CTA Section with Improved Style */}
       <motion.section 
         className="py-24 px-4 bg-gradient-to-r from-gray-50 to-gray-100"
         initial={{ opacity: 0 }}
@@ -293,7 +287,6 @@ const Index = () => {
         </motion.div>
       </motion.section>
       
-      {/* Connect Section with Enhanced Visuals */}
       <motion.section 
         className="py-20 px-4 bg-gradient-to-b from-white to-indigo-50 relative"
         initial={{ opacity: 0 }}
