@@ -62,10 +62,10 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen overflow-hidden">
-      {/* Hero Section with Enhanced Animations */}
+    <div className="min-h-screen overflow-x-hidden">
+      {/* Hero Section with Enhanced Animations - Fixed positioning */}
       <motion.section 
-        className="py-24 px-4 relative bg-gradient-to-b from-white to-gray-50"
+        className="py-16 md:py-24 px-4 relative bg-gradient-to-b from-white to-gray-50 min-h-[80vh] flex items-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.7 }}
@@ -103,7 +103,7 @@ const Index = () => {
         </motion.div>
 
         <motion.div 
-          className="max-w-4xl mx-auto text-center relative z-10"
+          className="max-w-4xl mx-auto text-center relative z-10 w-full"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
