@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { format, isToday, isTomorrow, isYesterday, addDays } from "date-fns";
+import { format, isToday, isTomorrow, isYesterday, addDays, parseISO } from "date-fns";
 
 interface Todo {
   id: string;
@@ -34,6 +34,7 @@ const TodoPage = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [draggedTodo, setDraggedTodo] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -149,14 +150,16 @@ const TodoPage = () => {
     if (!newTodoText.trim() || !user) return;
     
     try {
+      const newTodo = {
+        text: newTodoText.trim(),
+        completed: false,
+        user_id: user.id,
+        due_date: new Date().toISOString() // Set to today by default
+      };
+      
       const { data, error } = await supabase
         .from("todos")
-        .insert({
-          text: newTodoText.trim(),
-          completed: false,
-          user_id: user.id,
-          due_date: new Date().toISOString() // Set to today by default
-        })
+        .insert(newTodo)
         .select();
 
       if (error) {
@@ -165,10 +168,9 @@ const TodoPage = () => {
 
       if (data && data.length > 0) {
         setTodos(prev => [data[0], ...prev]);
+        setNewTodoText("");
+        toast.success("Task added");
       }
-      
-      setNewTodoText("");
-      toast.success("Task added");
     } catch (error) {
       console.error("Error adding todo:", error);
       toast.error("Failed to add task");
@@ -285,19 +287,31 @@ const TodoPage = () => {
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, id: string) => {
     setDraggedTodo(id);
+    // Store the drag source element's data
+    e.dataTransfer.setData("text/plain", id);
+    // Set a custom effect
+    e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, dateSection: string) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDropTarget(dateSection);
+  };
+
+  const handleDragLeave = () => {
+    setDropTarget(null);
   };
 
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>, targetDate: string) => {
     e.preventDefault();
+    setDropTarget(null);
     
-    if (!draggedTodo) return;
+    const todoId = e.dataTransfer.getData("text/plain") || draggedTodo;
+    if (!todoId) return;
     
     try {
-      const todoToMove = todos.find(todo => todo.id === draggedTodo);
+      const todoToMove = todos.find(todo => todo.id === todoId);
       if (!todoToMove) return;
       
       let dueDate: Date;
@@ -318,7 +332,7 @@ const TodoPage = () => {
           due_date: dueDate.toISOString(),
           updated_at: new Date().toISOString()
         })
-        .eq("id", draggedTodo);
+        .eq("id", todoId);
 
       if (error) {
         throw error;
@@ -326,7 +340,7 @@ const TodoPage = () => {
 
       setTodos(prevTodos =>
         prevTodos.map(todo =>
-          todo.id === draggedTodo
+          todo.id === todoId
             ? { ...todo, due_date: dueDate.toISOString() }
             : todo
         )
@@ -403,19 +417,21 @@ const TodoPage = () => {
           {sortedDates.map(date => (
             <div 
               key={date} 
-              className="mb-6"
-              onDragOver={handleDragOver}
+              className={cn(
+                "mb-6",
+                dropTarget === date ? "bg-blue-50 rounded-lg transition-colors" : ""
+              )}
+              onDragOver={(e) => handleDragOver(e, date)}
+              onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, date)}
             >
               <div className="flex items-center mb-2">
                 <h2 className="text-sm font-medium text-gray-500">{date}</h2>
-                {date === "Today" && (
-                  <div className="ml-2 flex items-center text-xs text-gray-400">
-                    <span>Drag to move</span>
-                    <MoveRight className="h-3 w-3 mx-1" />
-                    <Calendar className="h-3 w-3" />
-                  </div>
-                )}
+                <div className="ml-2 flex items-center text-xs text-gray-400">
+                  <span>Drag to move</span>
+                  <MoveRight className="h-3 w-3 mx-1" />
+                  <Calendar className="h-3 w-3" />
+                </div>
               </div>
               <div className="space-y-2">
                 {groupedTodos[date] && groupedTodos[date].length > 0 ? (
@@ -430,6 +446,7 @@ const TodoPage = () => {
                       onEdit={handleEditTodo}
                       draggable={true}
                       onDragStart={handleDragStart}
+                      dueDate={todo.due_date}
                     />
                   ))
                 ) : (

@@ -14,6 +14,7 @@ interface TodoItemProps {
   onEdit: (id: string, text: string) => void;
   draggable?: boolean;
   onDragStart?: (e: React.DragEvent<HTMLDivElement>, id: string) => void;
+  dueDate?: string;
 }
 
 const TodoItem = ({ 
@@ -24,7 +25,8 @@ const TodoItem = ({
   onDelete, 
   onEdit,
   draggable = false,
-  onDragStart
+  onDragStart,
+  dueDate
 }: TodoItemProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState(text);
@@ -67,6 +69,8 @@ const TodoItem = ({
       onMouseLeave={() => setIsHovering(false)}
       draggable={draggable}
       onDragStart={(e) => onDragStart && onDragStart(e, id)}
+      data-todo-id={id}
+      data-due-date={dueDate}
     >
       <div className="flex items-center gap-3 flex-1">
         <Checkbox 
