@@ -138,7 +138,6 @@ const Notes = () => {
         onSave={handleSaveNoteWithConfetti}
         note={currentNote}
         categories={categories}
-        onCreateCategory={handleCreateCategory}
       />
     </motion.div>
   );

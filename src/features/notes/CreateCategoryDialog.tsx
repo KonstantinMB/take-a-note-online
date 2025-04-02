@@ -14,13 +14,12 @@ import CategoryBadge from "@/components/CategoryBadge";
 interface CreateCategoryDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (name: string, color: string) => Promise<void | boolean>;
+  onSave: (name: string, color: string) => Promise<void>;
 }
 
 const CreateCategoryDialog = ({ isOpen, onClose, onSave }: CreateCategoryDialogProps) => {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryColor, setNewCategoryColor] = useState("#D3E4FD"); // Default soft blue
-  const [isSaving, setIsSaving] = useState(false);
 
   const softColors = [
     "#F2FCE2", // Soft Green
@@ -34,23 +33,8 @@ const CreateCategoryDialog = ({ isOpen, onClose, onSave }: CreateCategoryDialogP
   ];
 
   const handleSave = async () => {
-    if (!newCategoryName.trim()) {
-      return;
-    }
-    
-    setIsSaving(true);
-    try {
-      await onSave(newCategoryName, newCategoryColor);
-      setNewCategoryName("");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && newCategoryName.trim()) {
-      handleSave();
-    }
+    await onSave(newCategoryName, newCategoryColor);
+    setNewCategoryName("");
   };
 
   return (
@@ -69,8 +53,6 @@ const CreateCategoryDialog = ({ isOpen, onClose, onSave }: CreateCategoryDialogP
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
               placeholder="Enter category name"
-              onKeyDown={handleKeyDown}
-              autoFocus
             />
           </div>
           <div className="grid gap-2">
@@ -100,11 +82,11 @@ const CreateCategoryDialog = ({ isOpen, onClose, onSave }: CreateCategoryDialogP
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSaving}>
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSaving || !newCategoryName.trim()}>
-            {isSaving ? "Creating..." : "Create Category"}
+          <Button onClick={handleSave}>
+            Create Category
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +11,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { format, isToday, isTomorrow, isYesterday, addDays, parseISO } from "date-fns";
-import { cn } from "@/lib/utils";
+import { format, isToday, isTomorrow, isYesterday, addDays } from "date-fns";
 
 interface Todo {
   id: string;
@@ -34,7 +34,6 @@ const TodoPage = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [draggedTodo, setDraggedTodo] = useState<string | null>(null);
-  const [dropTarget, setDropTarget] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -82,6 +81,7 @@ const TodoPage = () => {
   const getTomorrowDate = () => addDays(new Date(), 1);
 
   const groupedTodos = filteredTodos.reduce((groups: GroupedTodos, todo) => {
+    // Check if todo has a due_date
     let dateToUse = todo.due_date ? new Date(todo.due_date) : new Date(todo.created_at);
     let dateString: string;
     
@@ -103,6 +103,7 @@ const TodoPage = () => {
     return groups;
   }, {});
 
+  // Make sure "Today" and "Tomorrow" sections always exist
   if (!groupedTodos["Today"]) {
     groupedTodos["Today"] = [];
   }
@@ -112,6 +113,7 @@ const TodoPage = () => {
   }
 
   const sortedDates = Object.keys(groupedTodos).sort((a, b) => {
+    // Special cases first
     if (a === "Today") return -1;
     if (b === "Today") return 1;
     
@@ -121,6 +123,7 @@ const TodoPage = () => {
     if (a === "Yesterday" && b !== "Today" && b !== "Tomorrow") return -1;
     if (b === "Yesterday" && a !== "Today" && a !== "Tomorrow") return 1;
     
+    // Convert string dates to actual Date objects for comparison
     const dateA = a === "Today" 
       ? getTodayDate()
       : a === "Tomorrow"
@@ -146,16 +149,14 @@ const TodoPage = () => {
     if (!newTodoText.trim() || !user) return;
     
     try {
-      const newTodo = {
-        text: newTodoText.trim(),
-        completed: false,
-        user_id: user.id,
-        due_date: new Date().toISOString()
-      };
-      
       const { data, error } = await supabase
         .from("todos")
-        .insert(newTodo)
+        .insert({
+          text: newTodoText.trim(),
+          completed: false,
+          user_id: user.id,
+          due_date: new Date().toISOString() // Set to today by default
+        })
         .select();
 
       if (error) {
@@ -164,9 +165,10 @@ const TodoPage = () => {
 
       if (data && data.length > 0) {
         setTodos(prev => [data[0], ...prev]);
-        setNewTodoText("");
-        toast.success("Task added");
       }
+      
+      setNewTodoText("");
+      toast.success("Task added");
     } catch (error) {
       console.error("Error adding todo:", error);
       toast.error("Failed to add task");
@@ -198,6 +200,7 @@ const TodoPage = () => {
         )
       );
       
+      // Only trigger confetti when marking a todo as completed
       if (!todoToUpdate.completed) {
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 100);
@@ -282,29 +285,19 @@ const TodoPage = () => {
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, id: string) => {
     setDraggedTodo(id);
-    e.dataTransfer.setData("text/plain", id);
-    e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, dateSection: string) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDropTarget(dateSection);
-  };
-
-  const handleDragLeave = () => {
-    setDropTarget(null);
   };
 
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>, targetDate: string) => {
     e.preventDefault();
-    setDropTarget(null);
     
-    const todoId = e.dataTransfer.getData("text/plain") || draggedTodo;
-    if (!todoId) return;
+    if (!draggedTodo) return;
     
     try {
-      const todoToMove = todos.find(todo => todo.id === todoId);
+      const todoToMove = todos.find(todo => todo.id === draggedTodo);
       if (!todoToMove) return;
       
       let dueDate: Date;
@@ -325,7 +318,7 @@ const TodoPage = () => {
           due_date: dueDate.toISOString(),
           updated_at: new Date().toISOString()
         })
-        .eq("id", todoId);
+        .eq("id", draggedTodo);
 
       if (error) {
         throw error;
@@ -333,7 +326,7 @@ const TodoPage = () => {
 
       setTodos(prevTodos =>
         prevTodos.map(todo =>
-          todo.id === todoId
+          todo.id === draggedTodo
             ? { ...todo, due_date: dueDate.toISOString() }
             : todo
         )
@@ -410,21 +403,19 @@ const TodoPage = () => {
           {sortedDates.map(date => (
             <div 
               key={date} 
-              className={cn(
-                "mb-6",
-                dropTarget === date ? "bg-blue-50 rounded-lg transition-colors" : ""
-              )}
-              onDragOver={(e) => handleDragOver(e, date)}
-              onDragLeave={handleDragLeave}
+              className="mb-6"
+              onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, date)}
             >
               <div className="flex items-center mb-2">
                 <h2 className="text-sm font-medium text-gray-500">{date}</h2>
-                <div className="ml-2 flex items-center text-xs text-gray-400">
-                  <span>Drag to move</span>
-                  <MoveRight className="h-3 w-3 mx-1" />
-                  <Calendar className="h-3 w-3" />
-                </div>
+                {date === "Today" && (
+                  <div className="ml-2 flex items-center text-xs text-gray-400">
+                    <span>Drag to move</span>
+                    <MoveRight className="h-3 w-3 mx-1" />
+                    <Calendar className="h-3 w-3" />
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 {groupedTodos[date] && groupedTodos[date].length > 0 ? (
@@ -439,7 +430,6 @@ const TodoPage = () => {
                       onEdit={handleEditTodo}
                       draggable={true}
                       onDragStart={handleDragStart}
-                      dueDate={todo.due_date}
                     />
                   ))
                 ) : (
