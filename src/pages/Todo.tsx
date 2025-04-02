@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { format, isToday, isTomorrow, isYesterday, addDays, parseISO } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface Todo {
   id: string;
@@ -82,7 +82,6 @@ const TodoPage = () => {
   const getTomorrowDate = () => addDays(new Date(), 1);
 
   const groupedTodos = filteredTodos.reduce((groups: GroupedTodos, todo) => {
-    // Check if todo has a due_date
     let dateToUse = todo.due_date ? new Date(todo.due_date) : new Date(todo.created_at);
     let dateString: string;
     
@@ -104,7 +103,6 @@ const TodoPage = () => {
     return groups;
   }, {});
 
-  // Make sure "Today" and "Tomorrow" sections always exist
   if (!groupedTodos["Today"]) {
     groupedTodos["Today"] = [];
   }
@@ -114,7 +112,6 @@ const TodoPage = () => {
   }
 
   const sortedDates = Object.keys(groupedTodos).sort((a, b) => {
-    // Special cases first
     if (a === "Today") return -1;
     if (b === "Today") return 1;
     
@@ -124,7 +121,6 @@ const TodoPage = () => {
     if (a === "Yesterday" && b !== "Today" && b !== "Tomorrow") return -1;
     if (b === "Yesterday" && a !== "Today" && a !== "Tomorrow") return 1;
     
-    // Convert string dates to actual Date objects for comparison
     const dateA = a === "Today" 
       ? getTodayDate()
       : a === "Tomorrow"
@@ -154,7 +150,7 @@ const TodoPage = () => {
         text: newTodoText.trim(),
         completed: false,
         user_id: user.id,
-        due_date: new Date().toISOString() // Set to today by default
+        due_date: new Date().toISOString()
       };
       
       const { data, error } = await supabase
@@ -202,7 +198,6 @@ const TodoPage = () => {
         )
       );
       
-      // Only trigger confetti when marking a todo as completed
       if (!todoToUpdate.completed) {
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 100);
@@ -287,9 +282,7 @@ const TodoPage = () => {
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, id: string) => {
     setDraggedTodo(id);
-    // Store the drag source element's data
     e.dataTransfer.setData("text/plain", id);
-    // Set a custom effect
     e.dataTransfer.effectAllowed = "move";
   };
 
