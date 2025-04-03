@@ -14,7 +14,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format, startOfMonth } from "date-fns";
+import { format } from "date-fns";
 import ExpenseCategoryBadge from "@/components/ExpenseCategoryBadge";
 
 interface BudgetItem {
@@ -29,7 +29,7 @@ interface ExpenseCategory {
   id: string;
   name: string;
   color: string;
-  icon?: string;
+  icon?: string | null;
   user_id: string;
   created_at: string;
 }
@@ -63,6 +63,7 @@ const BudgetPlanner = () => {
       if (!user) return;
       
       const monthYear = format(selectedMonth, 'yyyy-MM');
+      // Use the type-safe way to access the budget_items table
       const { data, error } = await supabase
         .from('budget_items')
         .select('*')
@@ -74,7 +75,8 @@ const BudgetPlanner = () => {
         return;
       }
 
-      setBudgetItems(data || []);
+      // Cast the data to the BudgetItem[] type
+      setBudgetItems(data as BudgetItem[]);
     };
 
     fetchCategories();
@@ -95,6 +97,7 @@ const BudgetPlanner = () => {
       user_id: user.id
     };
 
+    // Use the type-safe way to access the budget_items table
     const { data, error } = await supabase
       .from('budget_items')
       .upsert(newBudgetItem)
