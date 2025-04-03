@@ -1,7 +1,7 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu, X, Wallet, PieChart } from "lucide-react";
+import { LogOut, Menu, X, Wallet } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,7 +19,6 @@ const Navbar = () => {
     { path: "/calendar", label: "Calendar", requiresAuth: true },
     { path: "/references", label: "References", requiresAuth: true },
     { path: "/expenses", label: "Expenses", requiresAuth: true, icon: <Wallet className="h-4 w-4" /> },
-    { path: "/budget", label: "Budget Planner", requiresAuth: true, icon: <PieChart className="h-4 w-4" /> },
   ];
 
   const toggleMenu = () => {
