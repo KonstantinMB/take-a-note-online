@@ -90,8 +90,24 @@
     @apply flex items-center transition-transform hover:scale-105;
   }
   
-  .category-wrapper .pencil-button {
-    @apply opacity-0 group-hover:opacity-100 transition-opacity;
+  .category-badges-container {
+    @apply flex flex-wrap gap-2 my-4;
+  }
+  
+  .category-badge {
+    @apply flex items-center gap-2 rounded-full py-2 px-3 text-sm font-medium transition-all;
+  }
+  
+  .category-badge-with-actions {
+    @apply relative group;
+  }
+  
+  .category-badge-actions {
+    @apply absolute right-0 top-0 bottom-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity;
+  }
+  
+  .edit-button {
+    @apply rounded-full p-1 bg-white/80 hover:bg-white text-gray-700 hover:shadow-md transition-all;
   }
 }
 

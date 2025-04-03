@@ -1,6 +1,5 @@
 
 import { cn } from "@/lib/utils";
-import { LucideIcon } from "lucide-react";
 import * as Icons from "lucide-react";
 
 interface ExpenseCategoryBadgeProps {
@@ -13,12 +12,12 @@ interface ExpenseCategoryBadgeProps {
 
 const ExpenseCategoryBadge = ({ name, color, icon, className, onClick }: ExpenseCategoryBadgeProps) => {
   // Dynamically import icon from Lucide
-  let IconComponent: LucideIcon | null = null;
+  let IconComponent: React.ComponentType<any> | null = null;
   
   if (icon && typeof icon === 'string') {
-    // Get icon from Lucide
+    // Get icon from Lucide icons
     const iconName = icon as keyof typeof Icons;
-    if (iconName in Icons && typeof Icons[iconName] !== 'undefined') {
+    if (Icons[iconName]) {
       IconComponent = Icons[iconName];
     }
   }
@@ -30,7 +29,7 @@ const ExpenseCategoryBadge = ({ name, color, icon, className, onClick }: Expense
         onClick ? "cursor-pointer hover:opacity-90" : "",
         className
       )}
-      style={{ backgroundColor: `${color}40`, color: color }}
+      style={{ backgroundColor: `${color}30`, color: color }}
       onClick={onClick}
     >
       {IconComponent && <IconComponent className="h-4 w-4 flex-shrink-0" />}

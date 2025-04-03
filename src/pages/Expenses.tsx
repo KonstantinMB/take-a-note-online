@@ -28,9 +28,9 @@ const Expenses = () => {
     <div className="page-container">
       <h1 className="text-3xl font-bold mb-8">Expenses Tracker</h1>
       
-      <div className="grid gap-8 lg:grid-cols-12">
+      <div className="grid gap-10 lg:grid-cols-12">
         {/* Left column: Add form and Summary */}
-        <div className="lg:col-span-5 space-y-8">
+        <div className="lg:col-span-5 space-y-10">
           <AddExpenseForm onExpenseAdded={handleExpenseAdded} />
           <ExpenseSummary refreshTrigger={refreshTrigger} />
         </div>
