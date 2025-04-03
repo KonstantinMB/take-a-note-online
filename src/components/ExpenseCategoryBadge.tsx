@@ -1,6 +1,7 @@
 
 import { cn } from "@/lib/utils";
 import * as Icons from "lucide-react";
+import { LucideProps } from "lucide-react";
 
 interface ExpenseCategoryBadgeProps {
   name: string;
@@ -11,16 +12,10 @@ interface ExpenseCategoryBadgeProps {
 }
 
 const ExpenseCategoryBadge = ({ name, color, icon, className, onClick }: ExpenseCategoryBadgeProps) => {
-  // Dynamically import icon from Lucide
-  let IconComponent: React.ComponentType<any> | null = null;
-  
-  if (icon && typeof icon === 'string') {
-    // Get icon from Lucide icons
-    const iconName = icon as keyof typeof Icons;
-    if (Icons[iconName]) {
-      IconComponent = Icons[iconName];
-    }
-  }
+  // Use the correct type for Lucide icons
+  const IconComponent = icon ? 
+    (Icons as Record<string, React.FC<LucideProps>>)[icon as string] : 
+    undefined;
 
   return (
     <div 
