@@ -1,25 +1,28 @@
 
-import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useLocation } from "react-router-dom";
-import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import React, { useState, useEffect } from "react";
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle,
+  CardFooter
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Save, Trash2 } from "lucide-react";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { format, startOfMonth } from "date-fns";
+import ExpenseCategoryBadge from "@/components/ExpenseCategoryBadge";
 
 interface BudgetItem {
-  id: string;
+  id?: string;
   category: string;
   planned_amount: number;
-  user_id: string;
   month_year: string;
-  created_at: string;
+  user_id: string;
 }
 
 interface ExpenseCategory {
@@ -32,279 +35,190 @@ interface ExpenseCategory {
 }
 
 const BudgetPlanner = () => {
-  const { isAuthenticated, user } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
+  const { user } = useAuth();
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [newItem, setNewItem] = useState({
-    category: "",
-    planned_amount: 0
-  });
+  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [plannedAmount, setPlannedAmount] = useState<string>('');
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/auth", { state: { from: location.pathname } });
-    }
-  }, [isAuthenticated, navigate, location]);
-
-  const formatMonthYear = (date: Date) => {
-    return format(date, "yyyy-MM");
-  };
-
-  useEffect(() => {
-    if (!user) return;
-    
     const fetchCategories = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('expense_categories')
-          .select('*')
-          .eq('user_id', user.id);
-          
-        if (error) throw error;
-        
-        setCategories(data);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-        toast.error("Failed to load categories");
-      }
-    };
-    
-    fetchCategories();
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    
-    const fetchBudgetItems = async () => {
-      setIsLoading(true);
-      try {
-        const monthYear = formatMonthYear(selectedDate);
-        
-        const { data, error } = await supabase
-          .from('budget_items')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('month_year', monthYear);
-          
-        if (error) throw error;
-        
-        setBudgetItems(data || []);
-      } catch (error) {
-        console.error("Error fetching budget items:", error);
-        toast.error("Failed to load budget items");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchBudgetItems();
-  }, [user, selectedDate]);
-
-  const handleMonthChange = (date: Date | undefined) => {
-    if (date) {
-      setSelectedDate(date);
-    }
-  };
-
-  const handleAddItem = async () => {
-    if (!user) return;
-    if (!newItem.category) {
-      toast.error("Please select a category");
-      return;
-    }
-    if (newItem.planned_amount <= 0) {
-      toast.error("Please enter a valid amount");
-      return;
-    }
-    
-    try {
-      const monthYear = formatMonthYear(selectedDate);
+      if (!user) return;
       
       const { data, error } = await supabase
-        .from('budget_items')
-        .insert({
-          category: newItem.category,
-          planned_amount: newItem.planned_amount,
-          user_id: user.id,
-          month_year: monthYear
-        })
-        .select();
-        
-      if (error) throw error;
+        .from('expense_categories')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) {
+        toast.error('Failed to load categories');
+        return;
+      }
+
+      setCategories(data || []);
+    };
+
+    const fetchBudgetItems = async () => {
+      if (!user) return;
       
-      setBudgetItems([...budgetItems, data[0]]);
-      setNewItem({ category: "", planned_amount: 0 });
-      toast.success("Budget item added");
-    } catch (error) {
-      console.error("Error adding budget item:", error);
-      toast.error("Failed to add budget item");
-    }
-  };
-
-  const handleDeleteItem = async (id: string) => {
-    try {
-      const { error } = await supabase
+      const monthYear = format(selectedMonth, 'yyyy-MM');
+      const { data, error } = await supabase
         .from('budget_items')
-        .delete()
-        .eq('id', id);
-        
-      if (error) throw error;
-      
-      setBudgetItems(budgetItems.filter(item => item.id !== id));
-      toast.success("Budget item deleted");
-    } catch (error) {
-      console.error("Error deleting budget item:", error);
-      toast.error("Failed to delete budget item");
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('month_year', monthYear);
+
+      if (error) {
+        toast.error('Failed to load budget items');
+        return;
+      }
+
+      setBudgetItems(data || []);
+    };
+
+    fetchCategories();
+    fetchBudgetItems();
+  }, [user, selectedMonth]);
+
+  const handleAddBudgetItem = async () => {
+    if (!user || !selectedCategory || !plannedAmount) {
+      toast.error('Please select a category and enter an amount');
+      return;
     }
-  };
 
-  const getCategoryName = (categoryId: string) => {
-    const category = categories.find(c => c.id === categoryId);
-    return category ? category.name : "Unknown Category";
-  };
+    const monthYear = format(selectedMonth, 'yyyy-MM');
+    const newBudgetItem: BudgetItem = {
+      category: selectedCategory,
+      planned_amount: parseFloat(plannedAmount),
+      month_year: monthYear,
+      user_id: user.id
+    };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
-    }).format(amount);
-  };
+    const { data, error } = await supabase
+      .from('budget_items')
+      .upsert(newBudgetItem)
+      .select();
 
-  const getTotalBudget = () => {
-    return budgetItems.reduce((total, item) => total + item.planned_amount, 0);
+    if (error) {
+      toast.error('Failed to save budget item');
+      return;
+    }
+
+    // Update local state
+    if (data) {
+      setBudgetItems(prev => {
+        // Remove existing item for this category if it exists
+        const filteredItems = prev.filter(item => 
+          item.category !== selectedCategory || item.month_year !== monthYear
+        );
+        return [...filteredItems, data[0] as BudgetItem];
+      });
+
+      // Reset form
+      setSelectedCategory(null);
+      setPlannedAmount('');
+      toast.success('Budget item saved');
+    }
   };
 
   return (
     <div className="page-container">
       <h1 className="text-3xl font-bold mb-6">Monthly Budget Planner</h1>
       
-      <div className="grid gap-8 lg:grid-cols-12">
-        <div className="lg:col-span-4 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Select Month</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-center">
-                <Calendar
-                  mode="month"
-                  selected={selectedDate}
-                  onSelect={handleMonthChange}
-                  className="rounded-md border"
-                />
-              </div>
-              <div className="mt-4 text-center">
-                <h2 className="text-xl font-bold">
-                  {format(selectedDate, "MMMM yyyy")}
-                </h2>
-                <p className="text-muted-foreground">
-                  Planning for {startOfMonth(selectedDate).toLocaleDateString()} - {endOfMonth(selectedDate).toLocaleDateString()}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Add Budget Item</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <select
-                    id="category"
-                    value={newItem.category}
-                    onChange={(e) => setNewItem({...newItem, category: e.target.value})}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <option value="">Select a category</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="amount">Planned Amount</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newItem.planned_amount || ""}
-                    onChange={(e) => setNewItem({...newItem, planned_amount: parseFloat(e.target.value) || 0})}
-                  />
-                </div>
-                
-                <Button 
-                  className="w-full" 
-                  onClick={handleAddItem}
-                >
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Add to Budget
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="text-xl">Set Budget for {format(selectedMonth, 'MMMM yyyy')}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center space-x-4">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline">
+                  {format(selectedMonth, 'MMMM yyyy')}
                 </Button>
+              </PopoverTrigger>
+              <PopoverContent>
+                <Calendar
+                  mode="single"
+                  selected={selectedMonth}
+                  onSelect={(date) => setSelectedMonth(date || new Date())}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            
+            <div className="flex-1">
+              <div className="flex flex-wrap gap-2 mb-2">
+                {categories.map((category) => (
+                  <ExpenseCategoryBadge
+                    key={category.id}
+                    name={category.name}
+                    color={category.color}
+                    icon={category.icon}
+                    onClick={() => setSelectedCategory(category.id)}
+                    className={`${
+                      selectedCategory === category.id 
+                        ? "ring-2 ring-offset-2" 
+                        : "opacity-70 hover:opacity-100"
+                    }`}
+                  />
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+            
+            <Input 
+              type="number" 
+              placeholder="Budget Amount" 
+              value={plannedAmount}
+              onChange={(e) => setPlannedAmount(e.target.value)}
+              className="w-40"
+            />
+          </div>
+          
+          <Button 
+            onClick={handleAddBudgetItem} 
+            disabled={!selectedCategory || !plannedAmount}
+            className="w-full"
+          >
+            Add Budget Item
+          </Button>
+        </CardContent>
         
-        <div className="lg:col-span-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Budget for {format(selectedDate, "MMMM yyyy")}</CardTitle>
-              <div className="text-right">
-                <div className="text-sm text-muted-foreground">Total Budget:</div>
-                <div className="text-2xl font-bold">{formatCurrency(getTotalBudget())}</div>
+        <CardFooter>
+          <div className="w-full">
+            <h3 className="text-lg font-semibold mb-4">Current Budget Items</h3>
+            {budgetItems.length === 0 ? (
+              <p className="text-muted-foreground text-center">
+                No budget items for this month
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {budgetItems.map((item) => {
+                  const category = categories.find(c => c.id === item.category);
+                  return (
+                    <div 
+                      key={item.id} 
+                      className="flex justify-between items-center p-3 border rounded-lg"
+                    >
+                      {category && (
+                        <ExpenseCategoryBadge
+                          name={category.name}
+                          color={category.color}
+                          icon={category.icon}
+                        />
+                      )}
+                      <span className="font-medium">
+                        ${item.planned_amount.toFixed(2)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="text-center py-8">Loading budget items...</div>
-              ) : budgetItems.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">No budget items found</p>
-                  <p className="text-sm text-muted-foreground">Add your first budget item using the form</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Category</TableHead>
-                      <TableHead className="text-right">Planned Amount</TableHead>
-                      <TableHead className="w-[100px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {budgetItems.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">{getCategoryName(item.category)}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.planned_amount)}</TableCell>
-                        <TableCell>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleDeleteItem(item.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            )}
+          </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 };
