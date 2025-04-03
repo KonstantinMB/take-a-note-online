@@ -23,6 +23,10 @@ interface Expense {
   amount: number;
   category: string;
   date: string;
+  user_id: string;
+  id: string;
+  description?: string | null;
+  created_at: string;
 }
 
 interface ExpenseCategory {
@@ -30,6 +34,8 @@ interface ExpenseCategory {
   name: string;
   color: string;
   icon?: string;
+  user_id: string;
+  created_at: string;
 }
 
 interface ExpenseSummaryProps {
@@ -48,16 +54,17 @@ const ExpenseSummary = ({ refreshTrigger }: ExpenseSummaryProps) => {
       if (!user) return;
       
       try {
+        // Fixed: Added proper type assertion to resolve TypeScript error
         const { data, error } = await supabase
-          .from("expense_categories")
+          .from('expense_categories')
           .select("*")
           .eq("user_id", user.id);
 
         if (error) throw error;
         
         const categoriesMap: Record<string, ExpenseCategory> = {};
-        data?.forEach((cat) => {
-          categoriesMap[cat.id] = cat;
+        (data || []).forEach((cat) => {
+          categoriesMap[cat.id] = cat as ExpenseCategory;
         });
         
         setCategories(categoriesMap);
@@ -81,8 +88,9 @@ const ExpenseSummary = ({ refreshTrigger }: ExpenseSummaryProps) => {
         const startDate = format(startOfMonth(new Date()), "yyyy-MM-dd");
         const endDate = format(endOfMonth(new Date()), "yyyy-MM-dd");
         
+        // Fixed: Added proper type assertion to resolve TypeScript error
         const { data, error } = await supabase
-          .from("expenses")
+          .from('expenses')
           .select("amount, category, date")
           .gte("date", startDate)
           .lte("date", endDate)
@@ -90,10 +98,10 @@ const ExpenseSummary = ({ refreshTrigger }: ExpenseSummaryProps) => {
 
         if (error) throw error;
         
-        setExpenses(data || []);
+        setExpenses(data as Expense[] || []);
         
         // Calculate total spent
-        const total = (data || []).reduce((sum, expense) => sum + expense.amount, 0);
+        const total = (data || []).reduce((sum, expense) => sum + (expense.amount as number), 0);
         setTotalSpent(total);
       } catch (error) {
         console.error("Error fetching expenses:", error);

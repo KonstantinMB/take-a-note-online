@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Card, 
@@ -35,6 +34,8 @@ interface ExpenseCategory {
   name: string;
   color: string;
   icon?: string;
+  user_id: string;
+  created_at: string;
 }
 
 const formSchema = z.object({
@@ -69,7 +70,7 @@ const AddExpenseForm = ({ onExpenseAdded }: { onExpenseAdded: () => void }) => {
       try {
         setIsLoadingCategories(true);
         const { data, error } = await supabase
-          .from("expense_categories")
+          .from('expense_categories')
           .select("*")
           .eq("user_id", user.id);
 
@@ -95,7 +96,6 @@ const AddExpenseForm = ({ onExpenseAdded }: { onExpenseAdded: () => void }) => {
     try {
       const formattedDate = format(values.date, "yyyy-MM-dd'T'HH:mm:ss'Z'");
       
-      // Convert amount to a number
       const numericAmount = parseFloat(values.amount.replace(/,/g, '.'));
       
       if (isNaN(numericAmount)) {
@@ -112,7 +112,7 @@ const AddExpenseForm = ({ onExpenseAdded }: { onExpenseAdded: () => void }) => {
       };
 
       const { error } = await supabase
-        .from("expenses")
+        .from('expenses')
         .insert(newExpense);
 
       if (error) throw error;
@@ -120,7 +120,7 @@ const AddExpenseForm = ({ onExpenseAdded }: { onExpenseAdded: () => void }) => {
       toast.success("Expense added successfully");
       form.reset({
         amount: "",
-        category: form.getValues().category, // Keep the selected category
+        category: form.getValues().category,
         description: "",
         date: new Date(),
       });
@@ -143,18 +143,17 @@ const AddExpenseForm = ({ onExpenseAdded }: { onExpenseAdded: () => void }) => {
       };
 
       const { data, error } = await supabase
-        .from("expense_categories")
+        .from('expense_categories')
         .insert(newCategory)
         .select();
 
       if (error) throw error;
       
       if (data && data.length > 0) {
-        setCategories((prev) => [...prev, data[0]]);
+        setCategories((prev) => [...prev, data[0] as ExpenseCategory]);
         setIsCategoryDialogOpen(false);
         toast.success("Category created");
         
-        // Auto-select the new category
         form.setValue("category", data[0].id);
       }
     } catch (error) {

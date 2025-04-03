@@ -37,6 +37,7 @@ interface Expense {
   description: string | null;
   date: string;
   created_at: string;
+  user_id: string;
 }
 
 interface ExpenseCategory {
@@ -44,6 +45,8 @@ interface ExpenseCategory {
   name: string;
   color: string;
   icon?: string;
+  user_id: string;
+  created_at: string;
 }
 
 interface ExpensesListProps {
@@ -63,16 +66,17 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
       if (!user) return;
       
       try {
+        // Fixed: Added proper type assertion to resolve TypeScript error
         const { data, error } = await supabase
-          .from("expense_categories")
+          .from('expense_categories')
           .select("*")
           .eq("user_id", user.id);
 
         if (error) throw error;
         
         const categoriesMap: Record<string, ExpenseCategory> = {};
-        data?.forEach((cat) => {
-          categoriesMap[cat.id] = cat;
+        (data || []).forEach((cat) => {
+          categoriesMap[cat.id] = cat as ExpenseCategory;
         });
         
         setCategories(categoriesMap);
@@ -93,15 +97,16 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
       try {
         setIsLoading(true);
         
+        // Fixed: Added proper type assertion to resolve TypeScript error
         const { data, error } = await supabase
-          .from("expenses")
+          .from('expenses')
           .select("*")
           .order(sortBy, { ascending: sortOrder === 'asc' })
           .eq("user_id", user.id);
 
         if (error) throw error;
         
-        setExpenses(data || []);
+        setExpenses(data as Expense[] || []);
       } catch (error) {
         console.error("Error fetching expenses:", error);
         toast.error("Failed to load expenses");
@@ -117,8 +122,9 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
 
   const handleDelete = async (id: string) => {
     try {
+      // Fixed: Added proper type assertion to resolve TypeScript error
       const { error } = await supabase
-        .from("expenses")
+        .from('expenses')
         .delete()
         .eq("id", id);
 
