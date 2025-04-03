@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Card, 
@@ -21,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import ExpenseCategoryBadge from "@/components/ExpenseCategoryBadge";
+import * as LucideIcons from "lucide-react"; 
 import { 
   MoreVertical, 
   Trash2, 
@@ -298,18 +298,15 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
                           className="w-10 h-10 rounded-md flex items-center justify-center"
                           style={{ backgroundColor: `${category.color}30` }}
                         >
-                          {category.icon && (
-                            // Dynamically import the icon
-                            (() => {
-                              const IconComponent = (require('lucide-react') as any)[category.icon];
-                              return IconComponent ? (
-                                <IconComponent 
-                                  style={{ color: category.color }} 
-                                  className="h-5 w-5" 
-                                />
-                              ) : null;
-                            })()
-                          )}
+                          {category.icon && (() => {
+                            const IconComponent = LucideIcons[category.icon as keyof typeof LucideIcons];
+                            return IconComponent ? (
+                              <IconComponent 
+                                style={{ color: category.color }} 
+                                className="h-5 w-5" 
+                              />
+                            ) : null;
+                          })()}
                         </div>
                       ) : (
                         <div className="w-10 h-10 rounded-md bg-gray-100"></div>

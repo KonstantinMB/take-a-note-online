@@ -1,6 +1,6 @@
 
 import { cn } from "@/lib/utils";
-import * as Icons from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { LucideProps } from "lucide-react";
 
 interface ExpenseCategoryBadgeProps {
@@ -12,9 +12,9 @@ interface ExpenseCategoryBadgeProps {
 }
 
 const ExpenseCategoryBadge = ({ name, color, icon, className, onClick }: ExpenseCategoryBadgeProps) => {
-  // Use a more precise type for the dynamic component
+  // Use type assertion to access icons by name
   const IconComponent = icon 
-    ? (Icons as Record<string, React.ComponentType<LucideProps>>)[icon] 
+    ? (LucideIcons as Record<string, React.ComponentType<LucideProps>>)[icon] 
     : undefined;
 
   return (
