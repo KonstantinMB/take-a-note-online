@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +8,7 @@ import ExpenseCategoryBadge from "@/components/ExpenseCategoryBadge";
 import { motion, AnimatePresence } from "framer-motion";
 import CreateCategoryDialog from "./CreateCategoryDialog";
 import EditCategoryDialog from "./EditCategoryDialog";
+import { cn } from "@/lib/utils";
 
 interface Category {
   id: string;
@@ -182,28 +182,35 @@ const CategoriesManager = ({
           >
             <div className="flex flex-wrap gap-2 ml-6 mt-2 mb-2">
               {categories.map(category => (
-                <motion.div
-                  key={category.id}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="relative group"
-                >
-                  <ExpenseCategoryBadge
-                    name={category.name}
-                    color={category.color}
-                    icon={category.icon || undefined}
-                    className={selectedCategory === category.id ? "ring-2 ring-black/20" : "opacity-80 hover:opacity-100"}
-                    onClick={() => handleCategoryClick(category)}
-                  />
+                <div key={category.id} className="relative">
+                  {/* Edit button positioned outside the badge */}
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute -right-1 -top-1 h-5 w-5 rounded-full bg-white border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-white border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
                     onClick={(e) => handleEditClick(e, category)}
                   >
                     <Pencil className="h-3 w-3" />
                   </Button>
-                </motion.div>
+                  
+                  {/* Badge with proper spacing for the edit button */}
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="group relative pr-1"
+                  >
+                    <ExpenseCategoryBadge
+                      name={category.name}
+                      color={category.color}
+                      icon={category.icon || undefined}
+                      className={cn(
+                        selectedCategory === category.id ? "ring-2 ring-black/20" : "opacity-80 hover:opacity-100",
+                        "relative"
+                      )}
+                      onClick={() => handleCategoryClick(category)}
+                    />
+                  </motion.div>
+                </div>
               ))}
               
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>

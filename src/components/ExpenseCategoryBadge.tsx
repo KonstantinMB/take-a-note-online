@@ -15,8 +15,12 @@ const ExpenseCategoryBadge = ({ name, color, icon, className, onClick }: Expense
   // Dynamically import icon from Lucide
   let IconComponent: LucideIcon | null = null;
   
-  if (icon && typeof icon === 'string' && icon in Icons) {
-    IconComponent = (Icons as Record<string, LucideIcon>)[icon];
+  if (icon && typeof icon === 'string') {
+    // Type assertion to handle the icon lookup
+    const iconObject = Icons as Record<string, any>;
+    if (icon in iconObject && typeof iconObject[icon] !== 'function') {
+      IconComponent = iconObject[icon] as LucideIcon;
+    }
   }
 
   return (
