@@ -1,7 +1,7 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, X, Wallet } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +18,7 @@ const Navbar = () => {
     { path: "/todo", label: "Todo", requiresAuth: true },
     { path: "/calendar", label: "Calendar", requiresAuth: true },
     { path: "/references", label: "References", requiresAuth: true },
+    { path: "/expenses", label: "Expenses", requiresAuth: true }, // New expenses route
   ];
 
   const toggleMenu = () => {
@@ -47,12 +48,13 @@ const Navbar = () => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "px-3 py-2 rounded-md text-sm font-medium transition-colors text-center",
+                  "px-3 py-2 rounded-md text-sm font-medium transition-colors text-center flex items-center gap-2",
                   location.pathname === item.path
                     ? "bg-primary/10 text-primary"
                     : "text-foreground/60 hover:text-foreground hover:bg-accent"
                 )}
               >
+                {item.path === "/expenses" && <Wallet className="h-4 w-4" />}
                 {item.label}
               </Link>
             ))}
@@ -104,13 +106,14 @@ const Navbar = () => {
                     key={item.path}
                     to={item.path}
                     className={cn(
-                      "px-3 py-2 rounded-md text-base font-medium transition-colors text-center w-full",
+                      "px-3 py-2 rounded-md text-base font-medium transition-colors text-center w-full flex items-center gap-2",
                       location.pathname === item.path
                         ? "bg-primary/10 text-primary"
                         : "text-foreground/60 hover:text-foreground hover:bg-accent"
                     )}
                     onClick={closeMenu}
                   >
+                    {item.path === "/expenses" && <Wallet className="h-4 w-4" />}
                     {item.label}
                   </Link>
                 ))}
