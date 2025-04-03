@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -141,20 +142,20 @@ const CategoriesManager = ({
   };
 
   return (
-    <div className="mb-6">
+    <div className="mb-6 bg-card rounded-lg border shadow-sm overflow-hidden">
       <motion.div 
-        className="flex items-center mb-3 cursor-pointer bg-gray-50 p-3 rounded-lg" 
+        className="flex items-center px-4 py-3 cursor-pointer bg-muted/20 border-b" 
         onClick={() => setShowCategories(!showCategories)}
         whileHover={{ backgroundColor: "#F3F4F6" }}
       >
-        <Tag className="h-4 w-4 mr-2 text-gray-500" />
-        <span className="text-sm font-medium text-gray-700">Categories</span>
+        <Tag className="h-4 w-4 mr-2 text-muted-foreground" />
+        <span className="text-sm font-medium">Categories</span>
         <motion.div
           animate={{ rotate: showCategories ? 90 : 0 }}
           transition={{ duration: 0.2 }}
           className="ml-auto"
         >
-          <ChevronRight className="h-4 w-4 text-gray-500" />
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </motion.div>
         
         {selectedCategory && (
@@ -180,15 +181,16 @@ const CategoriesManager = ({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="flex flex-wrap gap-3 ml-6 my-3 items-center">
+            <div className="flex flex-wrap gap-2 p-4 items-center">
               {categories.map(category => (
-                <div key={category.id} className="relative group py-1 px-1">
+                <div key={category.id} className="relative group">
                   <ExpenseCategoryBadge
                     name={category.name}
                     color={category.color}
                     icon={category.icon || undefined}
                     className={cn(
-                      selectedCategory === category.id ? "ring-2 ring-black/20" : "",
+                      selectedCategory === category.id ? "ring-2 ring-primary/10" : "",
+                      "shadow-sm"
                     )}
                     onClick={() => handleCategoryClick(category)}
                   />
@@ -196,12 +198,12 @@ const CategoriesManager = ({
                   <Button
                     variant="secondary"
                     size="icon"
-                    className="absolute -right-2 -top-2 h-5 w-5 rounded-full 
-                              bg-white shadow-sm opacity-0 group-hover:opacity-100 
-                              transition-opacity z-10 border p-0"
+                    className="absolute -right-1 -top-1 h-4 w-4 rounded-full 
+                              bg-background shadow-sm opacity-0 group-hover:opacity-100 
+                              transition-opacity z-10 p-0"
                     onClick={(e) => handleEditClick(e, category)}
                   >
-                    <Pencil className="h-2.5 w-2.5" />
+                    <Pencil className="h-2 w-2" />
                   </Button>
                 </div>
               ))}
@@ -209,10 +211,10 @@ const CategoriesManager = ({
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-8 px-3 rounded-full flex items-center"
+                className="h-7 px-2.5 rounded-full flex items-center shadow-sm bg-background"
                 onClick={() => setIsCreateDialogOpen(true)}
               >
-                <Plus className="h-3.5 w-3.5 mr-1" />
+                <Plus className="h-3 w-3 mr-1" />
                 New
               </Button>
             </div>

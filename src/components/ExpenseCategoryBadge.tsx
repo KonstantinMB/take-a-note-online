@@ -16,18 +16,21 @@ const ExpenseCategoryBadge = ({ name, color, icon, className, onClick }: Expense
   const IconComponent = icon 
     ? (LucideIcons as Record<string, React.ComponentType<LucideProps>>)[icon] 
     : undefined;
+    
+  // Create a softer background color by adding transparency
+  const bgColor = `${color}15`; // 15% opacity
 
   return (
     <div 
       className={cn(
-        "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all",
-        onClick ? "cursor-pointer hover:opacity-90" : "",
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium transition-all",
+        onClick ? "cursor-pointer hover:opacity-90 hover:shadow-sm" : "",
         className
       )}
-      style={{ backgroundColor: `${color}30`, color: color }}
+      style={{ backgroundColor: bgColor, color: color }}
       onClick={onClick}
     >
-      {IconComponent && <IconComponent className="h-4 w-4 flex-shrink-0" />}
+      {IconComponent && <IconComponent className="h-3.5 w-3.5 flex-shrink-0" />}
       <span className="truncate max-w-[120px]">{name}</span>
     </div>
   );

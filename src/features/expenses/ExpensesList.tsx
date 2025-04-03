@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { 
   Card, 
@@ -179,7 +180,7 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full shadow-sm border">
       <CardHeader className="flex flex-row items-start justify-between pb-2">
         <div>
           <CardTitle className="text-xl">Recent Expenses</CardTitle>
@@ -200,14 +201,14 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
         <div className="flex space-x-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" className="h-8">
+                <Filter className="h-3.5 w-3.5 mr-1.5" />
                 Filter
                 {filterCategory && <span className="ml-1 text-xs">•</span>}
-                <ChevronDown className="h-4 w-4 ml-2" />
+                <ChevronDown className="h-3.5 w-3.5 ml-1.5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-white">
+            <DropdownMenuContent align="end" className="w-56 bg-background">
               <DropdownMenuLabel>Filter by Category</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {Object.values(categories).length > 0 ? (
@@ -218,12 +219,12 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
                   >
                     <div className="flex items-center w-full">
                       <div 
-                        className="w-3 h-3 rounded-full mr-2" 
+                        className="w-2.5 h-2.5 rounded-full mr-2" 
                         style={{ backgroundColor: category.color }}
                       />
-                      <span>{category.name}</span>
+                      <span className="text-sm">{category.name}</span>
                       {filterCategory === category.id && (
-                        <span className="ml-auto w-2 h-2 bg-primary rounded-full" />
+                        <span className="ml-auto w-1.5 h-1.5 bg-primary rounded-full" />
                       )}
                     </div>
                   </DropdownMenuItem>
@@ -244,27 +245,27 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <TrendingUp className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" className="h-8">
+                <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
                 Sort
-                <ChevronDown className="h-4 w-4 ml-2" />
+                <ChevronDown className="h-3.5 w-3.5 ml-1.5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-white">
+            <DropdownMenuContent align="end" className="bg-background">
               <DropdownMenuItem onClick={() => { setSortBy('date'); setSortOrder('desc'); }}>
-                <Calendar className="h-4 w-4 mr-2" />
+                <Calendar className="h-3.5 w-3.5 mr-2" />
                 Newest first
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => { setSortBy('date'); setSortOrder('asc'); }}>
-                <Calendar className="h-4 w-4 mr-2" />
+                <Calendar className="h-3.5 w-3.5 mr-2" />
                 Oldest first
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => { setSortBy('amount'); setSortOrder('desc'); }}>
-                <TrendingDown className="h-4 w-4 mr-2" />
+                <TrendingDown className="h-3.5 w-3.5 mr-2" />
                 Highest amount
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => { setSortBy('amount'); setSortOrder('asc'); }}>
-                <TrendingUp className="h-4 w-4 mr-2" />
+                <TrendingUp className="h-3.5 w-3.5 mr-2" />
                 Lowest amount
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -273,7 +274,7 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
       </CardHeader>
       <CardContent>
         {expenses.length === 0 ? (
-          <div className="text-center py-8 border rounded-lg bg-muted/10">
+          <div className="text-center py-8 border rounded-lg bg-muted/5">
             <p className="text-muted-foreground">No expenses found</p>
             <p className="text-sm text-muted-foreground mt-1">
               {filterCategory 
@@ -284,35 +285,35 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
           </div>
         ) : (
           <ScrollArea className="h-[400px] pr-4">
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               {expenses.map((expense) => {
                 const category = categories[expense.category];
                 return (
                   <div 
                     key={expense.id} 
-                    className="flex items-center justify-between p-4 rounded-lg bg-background border hover:border-muted-foreground/20 transition-colors"
+                    className="flex items-center justify-between p-3 rounded-lg bg-card border hover:border-muted-foreground/10 transition-colors hover:bg-muted/5"
                   >
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-3">
                       {category ? (
                         <div 
-                          className="w-10 h-10 rounded-md flex items-center justify-center"
-                          style={{ backgroundColor: `${category.color}30` }}
+                          className="w-9 h-9 rounded-md flex items-center justify-center"
+                          style={{ backgroundColor: `${category.color}15` }}
                         >
                           {category.icon && (() => {
                             const IconComponent = LucideIcons[category.icon as keyof typeof LucideIcons];
                             return IconComponent ? (
                               <IconComponent 
                                 style={{ color: category.color }} 
-                                className="h-5 w-5" 
+                                className="h-4.5 w-4.5" 
                               />
                             ) : null;
                           })()}
                         </div>
                       ) : (
-                        <div className="w-10 h-10 rounded-md bg-gray-100"></div>
+                        <div className="w-9 h-9 rounded-md bg-muted/20"></div>
                       )}
                       <div>
-                        <div className="font-medium">
+                        <div className="font-medium text-sm">
                           {formatAmount(expense.amount)}
                         </div>
                         <div className="flex items-center mt-1">
@@ -321,7 +322,7 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
                               name={category.name}
                               color={category.color}
                               icon={category.icon}
-                              className="text-xs px-2 py-0.5"
+                              className="text-xs px-1.5 py-0.5"
                             />
                           )}
                           <span className="text-xs text-muted-foreground ml-2">
@@ -337,17 +338,17 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreVertical className="h-4 w-4" />
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                          <MoreVertical className="h-3.5 w-3.5" />
                           <span className="sr-only">Open menu</span>
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-white">
+                      <DropdownMenuContent align="end" className="bg-background">
                         <DropdownMenuItem 
                           onClick={() => handleDelete(expense.id)}
                           className="text-destructive"
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
+                          <Trash2 className="h-3.5 w-3.5 mr-2" />
                           Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
