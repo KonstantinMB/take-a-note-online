@@ -78,7 +78,7 @@ declare module '@supabase/supabase-js' {
             created_at?: string;
           };
         };
-        // Add investments tables
+        // Add investments table
         investments: {
           Row: {
             id: string;

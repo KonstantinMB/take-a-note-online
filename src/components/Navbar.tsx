@@ -1,3 +1,4 @@
+
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, Menu, X, Wallet, TrendingUp } from "lucide-react";
@@ -9,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth(); // Changed from signOut to logout
   const location = useLocation();
   
   const navigation = [
@@ -65,7 +66,7 @@ const Navbar = () => {
                 variant="ghost"
                 size="sm"
                 className="ml-2"
-                onClick={signOut}
+                onClick={logout} // Changed from signOut to logout
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
@@ -117,7 +118,7 @@ const Navbar = () => {
                   variant="ghost"
                   className="justify-center w-full"
                   onClick={() => {
-                    signOut();
+                    logout(); // Changed from signOut to logout
                     closeMenu();
                   }}
                 >

@@ -1,23 +1,11 @@
 
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useEffect } from "react";
 import AddInvestmentForm from "@/features/investments/AddInvestmentForm";
 import InvestmentsList from "@/features/investments/InvestmentsList";
 import InvestmentSummary from "@/features/investments/InvestmentSummary";
 
 const Investments = () => {
-  const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/auth", { state: { from: location.pathname } });
-    }
-  }, [isAuthenticated, navigate, location]);
 
   const handleInvestmentAdded = () => {
     // Trigger refresh of investment lists and summary

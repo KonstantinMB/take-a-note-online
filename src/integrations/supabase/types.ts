@@ -132,6 +132,39 @@ export type Database = {
         }
         Relationships: []
       }
+      investments: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          purchase_date: string
+          purchase_price: number
+          shares: number
+          symbol: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          purchase_date: string
+          purchase_price: number
+          shares: number
+          symbol: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          purchase_date?: string
+          purchase_price?: number
+          shares?: number
+          symbol?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       note_categories: {
         Row: {
           color: string
