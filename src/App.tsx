@@ -10,6 +10,7 @@ import Todo from "./pages/Todo";
 import Calendar from "./pages/Calendar";
 import References from "./pages/References";
 import Expenses from "./pages/Expenses";
+import Investments from "./pages/Investments";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Navbar from "./components/Navbar";
@@ -53,6 +54,11 @@ const App = () => (
                 <Route path="/expenses" element={
                   <ProtectedRoute>
                     <Expenses />
+                  </ProtectedRoute>
+                } />
+                <Route path="/investments" element={
+                  <ProtectedRoute>
+                    <Investments />
                   </ProtectedRoute>
                 } />
                 <Route path="/auth" element={<Auth />} />

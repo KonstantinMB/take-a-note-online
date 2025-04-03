@@ -78,6 +78,39 @@ declare module '@supabase/supabase-js' {
             created_at?: string;
           };
         };
+        // Add investments tables
+        investments: {
+          Row: {
+            id: string;
+            user_id: string;
+            symbol: string;
+            shares: number;
+            purchase_price: number;
+            purchase_date: string;
+            notes: string | null;
+            created_at: string;
+          };
+          Insert: {
+            id?: string;
+            user_id: string;
+            symbol: string;
+            shares: number;
+            purchase_price: number;
+            purchase_date: string;
+            notes?: string | null;
+            created_at?: string;
+          };
+          Update: {
+            id?: string;
+            user_id?: string;
+            symbol?: string;
+            shares?: number;
+            purchase_price?: number;
+            purchase_date?: string;
+            notes?: string | null;
+            created_at?: string;
+          };
+        };
       };
     };
   }

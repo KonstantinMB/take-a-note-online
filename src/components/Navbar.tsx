@@ -1,36 +1,37 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu, X, Wallet } from "lucide-react";
+import { LogOut, Menu, X, Wallet, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { motion, AnimatePresence } from "framer-motion";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
 
 const Navbar = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
   const location = useLocation();
-  const { isAuthenticated, logout } = useAuth();
-
-  const navItems = [
-    { path: "/", label: "Home" },
+  
+  const navigation = [
+    { path: "/", label: "Home", requiresAuth: false },
     { path: "/notes", label: "Notes", requiresAuth: true },
-    { path: "/todo", label: "Todo", requiresAuth: true },
+    { path: "/todo", label: "To-Do", requiresAuth: true },
     { path: "/calendar", label: "Calendar", requiresAuth: true },
     { path: "/references", label: "References", requiresAuth: true },
     { path: "/expenses", label: "Expenses", requiresAuth: true, icon: <Wallet className="h-4 w-4" /> },
+    { path: "/investments", label: "Investments", requiresAuth: true, icon: <TrendingUp className="h-4 w-4" /> },
   ];
 
   const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
+    setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   const closeMenu = () => {
-    setIsMenuOpen(false);
+    setIsMobileMenuOpen(false);
   };
 
-  const filteredNavItems = navItems.filter(item => 
-    !item.requiresAuth || (item.requiresAuth && isAuthenticated)
+  const filteredNavItems = navigation.filter(item => 
+    !item.requiresAuth || (item.requiresAuth && user)
   );
 
   return (
@@ -59,12 +60,12 @@ const Navbar = () => {
               </Link>
             ))}
 
-            {isAuthenticated ? (
+            {user ? (
               <Button
                 variant="ghost"
                 size="sm"
                 className="ml-2"
-                onClick={logout}
+                onClick={signOut}
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
@@ -80,9 +81,9 @@ const Navbar = () => {
           <button
             className="md:hidden flex items-center"
             onClick={toggleMenu}
-            aria-label={isMenuOpen ? "Close Menu" : "Open Menu"}
+            aria-label={isMobileMenuOpen ? "Close Menu" : "Open Menu"}
           >
-            {isMenuOpen ? (
+            {isMobileMenuOpen ? (
               <X className="h-6 w-6" />
             ) : (
               <Menu className="h-6 w-6" />
@@ -91,54 +92,46 @@ const Navbar = () => {
         </div>
 
         {/* Mobile Navigation */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="md:hidden w-full overflow-hidden"
-            >
-              <div className="flex flex-col space-y-2 pt-2 pb-3 items-center">
-                {filteredNavItems.map((item) => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={cn(
-                      "px-3 py-2 rounded-md text-base font-medium transition-colors text-center w-full flex items-center gap-2",
-                      location.pathname === item.path
-                        ? "bg-primary/10 text-primary"
-                        : "text-foreground/60 hover:text-foreground hover:bg-accent"
-                    )}
-                    onClick={closeMenu}
-                  >
-                    {item.icon}
-                    {item.label}
-                  </Link>
-                ))}
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <SheetContent className="w-full">
+            <div className="flex flex-col space-y-2 pt-2 pb-3 items-center">
+              {filteredNavItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    "px-3 py-2 rounded-md text-base font-medium transition-colors text-center w-full flex items-center gap-2",
+                    location.pathname === item.path
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground/60 hover:text-foreground hover:bg-accent"
+                  )}
+                  onClick={closeMenu}
+                >
+                  {item.icon}
+                  {item.label}
+                </Link>
+              ))}
 
-                {isAuthenticated ? (
-                  <Button
-                    variant="ghost"
-                    className="justify-center w-full"
-                    onClick={() => {
-                      logout();
-                      closeMenu();
-                    }}
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
-                  </Button>
-                ) : (
-                  <Link to="/auth" onClick={closeMenu} className="w-full">
-                    <Button className="w-full">Sign In</Button>
-                  </Link>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              {user ? (
+                <Button
+                  variant="ghost"
+                  className="justify-center w-full"
+                  onClick={() => {
+                    signOut();
+                    closeMenu();
+                  }}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              ) : (
+                <Link to="/auth" onClick={closeMenu} className="w-full">
+                  <Button className="w-full">Sign In</Button>
+                </Link>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </nav>
   );

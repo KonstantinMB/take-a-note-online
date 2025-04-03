@@ -11,10 +11,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -26,7 +28,8 @@ import {
   ChevronDown,
   TrendingUp,
   TrendingDown,
-  Calendar
+  Calendar,
+  Edit
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -59,6 +62,7 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -66,7 +70,6 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
       if (!user) return;
       
       try {
-        // Fixed: Added proper type assertion to resolve TypeScript error
         const { data, error } = await supabase
           .from('expense_categories')
           .select("*")
@@ -88,7 +91,7 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
     if (user) {
       fetchCategories();
     }
-  }, [user]);
+  }, [user, refreshTrigger]);
 
   useEffect(() => {
     const fetchExpenses = async () => {
@@ -97,12 +100,17 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
       try {
         setIsLoading(true);
         
-        // Fixed: Added proper type assertion to resolve TypeScript error
-        const { data, error } = await supabase
+        let query = supabase
           .from('expenses')
           .select("*")
           .order(sortBy, { ascending: sortOrder === 'asc' })
           .eq("user_id", user.id);
+          
+        if (filterCategory) {
+          query = query.eq('category', filterCategory);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
         
@@ -118,11 +126,10 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
     if (user) {
       fetchExpenses();
     }
-  }, [user, refreshTrigger, sortBy, sortOrder]);
+  }, [user, refreshTrigger, sortBy, sortOrder, filterCategory]);
 
   const handleDelete = async (id: string) => {
     try {
-      // Fixed: Added proper type assertion to resolve TypeScript error
       const { error } = await supabase
         .from('expenses')
         .delete()
@@ -147,66 +154,143 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return format(date, "MMM d, yyyy");
+    try {
+      return format(parseISO(dateString), "MMM d, yyyy");
+    } catch (e) {
+      return dateString;
+    }
+  };
+
+  const clearFilters = () => {
+    setFilterCategory(null);
   };
 
   if (isLoading) {
-    return <div className="text-center py-8">Loading expenses...</div>;
+    return (
+      <Card className="w-full">
+        <CardContent className="flex justify-center items-center min-h-[300px]">
+          <div className="flex flex-col items-center">
+            <div className="w-6 h-6 border-2 border-t-primary rounded-full animate-spin mb-2"></div>
+            <p className="text-muted-foreground">Loading expenses...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
     <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardHeader className="flex flex-row items-start justify-between pb-2">
         <div>
           <CardTitle className="text-xl">Recent Expenses</CardTitle>
-          <CardDescription>
+          <CardDescription className="flex items-center">
             {expenses.length} {expenses.length === 1 ? "expense" : "expenses"} found
+            {filterCategory && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-6 ml-2 text-xs"
+                onClick={clearFilters}
+              >
+                Clear filter
+              </Button>
+            )}
           </CardDescription>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4 mr-2" />
-              Sort by
-              <ChevronDown className="h-4 w-4 ml-2" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { setSortBy('date'); setSortOrder('desc'); }}>
-              <Calendar className="h-4 w-4 mr-2" />
-              Newest first
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { setSortBy('date'); setSortOrder('asc'); }}>
-              <Calendar className="h-4 w-4 mr-2" />
-              Oldest first
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { setSortBy('amount'); setSortOrder('desc'); }}>
-              <TrendingDown className="h-4 w-4 mr-2" />
-              Highest amount
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { setSortBy('amount'); setSortOrder('asc'); }}>
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Lowest amount
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex space-x-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Filter
+                {filterCategory && <span className="ml-1 text-xs">•</span>}
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-white">
+              <DropdownMenuLabel>Filter by Category</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {Object.values(categories).length > 0 ? (
+                Object.values(categories).map((category) => (
+                  <DropdownMenuItem 
+                    key={category.id}
+                    onClick={() => setFilterCategory(category.id)}
+                  >
+                    <div className="flex items-center w-full">
+                      <div 
+                        className="w-3 h-3 rounded-full mr-2" 
+                        style={{ backgroundColor: category.color }}
+                      />
+                      <span>{category.name}</span>
+                      {filterCategory === category.id && (
+                        <span className="ml-auto w-2 h-2 bg-primary rounded-full" />
+                      )}
+                    </div>
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <DropdownMenuItem disabled>No categories found</DropdownMenuItem>
+              )}
+              {filterCategory && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={clearFilters}>
+                    Clear filter
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Sort
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-white">
+              <DropdownMenuItem onClick={() => { setSortBy('date'); setSortOrder('desc'); }}>
+                <Calendar className="h-4 w-4 mr-2" />
+                Newest first
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setSortBy('date'); setSortOrder('asc'); }}>
+                <Calendar className="h-4 w-4 mr-2" />
+                Oldest first
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setSortBy('amount'); setSortOrder('desc'); }}>
+                <TrendingDown className="h-4 w-4 mr-2" />
+                Highest amount
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setSortBy('amount'); setSortOrder('asc'); }}>
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Lowest amount
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </CardHeader>
       <CardContent>
         {expenses.length === 0 ? (
-          <div className="text-center py-8">
+          <div className="text-center py-8 border rounded-lg bg-muted/10">
             <p className="text-muted-foreground">No expenses found</p>
-            <p className="text-sm text-muted-foreground">Add your first expense using the form</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {filterCategory 
+                ? "Try removing filters or add an expense in this category"
+                : "Add your first expense using the form"
+              }
+            </p>
           </div>
         ) : (
-          <ScrollArea className="h-[400px]">
+          <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-4">
               {expenses.map((expense) => {
                 const category = categories[expense.category];
                 return (
                   <div 
                     key={expense.id} 
-                    className="flex items-center justify-between p-4 rounded-lg bg-background border"
+                    className="flex items-center justify-between p-4 rounded-lg bg-background border hover:border-muted-foreground/20 transition-colors"
                   >
                     <div className="flex items-center space-x-4">
                       {category ? (
@@ -258,9 +342,10 @@ const ExpensesList = ({ refreshTrigger }: ExpensesListProps) => {
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                           <MoreVertical className="h-4 w-4" />
+                          <span className="sr-only">Open menu</span>
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="bg-white">
                         <DropdownMenuItem 
                           onClick={() => handleDelete(expense.id)}
                           className="text-destructive"
