@@ -84,6 +84,15 @@
   .input-focused {
     @apply focus:ring-2 focus:ring-black/20 focus:border-transparent;
   }
+  
+  /* Category styling */
+  .category-wrapper {
+    @apply flex items-center transition-transform hover:scale-105;
+  }
+  
+  .category-wrapper .pencil-button {
+    @apply opacity-0 group-hover:opacity-100 transition-opacity;
+  }
 }
 
 @layer utilities {

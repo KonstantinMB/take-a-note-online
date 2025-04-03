@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -144,7 +145,7 @@ const CategoriesManager = ({
   return (
     <div className="mb-6">
       <motion.div 
-        className="flex items-center mb-2 cursor-pointer bg-gray-50 p-2 rounded-lg" 
+        className="flex items-center mb-3 cursor-pointer bg-gray-50 p-3 rounded-lg" 
         onClick={() => setShowCategories(!showCategories)}
         whileHover={{ backgroundColor: "#F3F4F6" }}
       >
@@ -153,8 +154,9 @@ const CategoriesManager = ({
         <motion.div
           animate={{ rotate: showCategories ? 90 : 0 }}
           transition={{ duration: 0.2 }}
+          className="ml-auto"
         >
-          <ChevronRight className="h-4 w-4 ml-1 text-gray-500" />
+          <ChevronRight className="h-4 w-4 text-gray-500" />
         </motion.div>
         
         {selectedCategory && (
@@ -180,50 +182,43 @@ const CategoriesManager = ({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="flex flex-wrap gap-2 ml-6 mt-2 mb-2">
+            <div className="flex flex-wrap gap-3 ml-6 my-3 items-center">
               {categories.map(category => (
-                <div key={category.id} className="relative">
-                  {/* Edit button positioned outside the badge */}
+                <div key={category.id} className="category-wrapper relative group">
+                  <ExpenseCategoryBadge
+                    name={category.name}
+                    color={category.color}
+                    icon={category.icon || undefined}
+                    className={cn(
+                      selectedCategory === category.id ? "ring-2 ring-black/20" : "",
+                      "relative"
+                    )}
+                    onClick={() => handleCategoryClick(category)}
+                  />
+                  
+                  {/* Edit button that appears on hover */}
                   <Button
-                    variant="ghost"
+                    variant="secondary"
                     size="icon"
-                    className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-white border shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                    className="absolute -right-2 -top-2 h-6 w-6 rounded-full 
+                              bg-white shadow-sm opacity-0 group-hover:opacity-100 
+                              transition-opacity z-10 border"
                     onClick={(e) => handleEditClick(e, category)}
                   >
                     <Pencil className="h-3 w-3" />
                   </Button>
-                  
-                  {/* Badge with proper spacing for the edit button */}
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="group relative pr-1"
-                  >
-                    <ExpenseCategoryBadge
-                      name={category.name}
-                      color={category.color}
-                      icon={category.icon || undefined}
-                      className={cn(
-                        selectedCategory === category.id ? "ring-2 ring-black/20" : "opacity-80 hover:opacity-100",
-                        "relative"
-                      )}
-                      onClick={() => handleCategoryClick(category)}
-                    />
-                  </motion.div>
                 </div>
               ))}
               
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-7 px-2 rounded-full"
-                  onClick={() => setIsCreateDialogOpen(true)}
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  New
-                </Button>
-              </motion.div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 px-3 rounded-full flex items-center"
+                onClick={() => setIsCreateDialogOpen(true)}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                New
+              </Button>
             </div>
           </motion.div>
         )}
