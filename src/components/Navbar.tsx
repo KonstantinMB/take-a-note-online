@@ -5,7 +5,7 @@ import { LogOut, Menu, X, Wallet, TrendingUp } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -76,33 +76,34 @@ const Navbar = () => {
             {hiddenNavItems.length > 0 && (
               <div className="hidden md:flex">
                 <Sheet>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    asChild
-                    className="px-2.5 py-1.5 h-auto text-foreground/60 hover:text-foreground hover:bg-accent"
-                  >
-                    <SheetContent side="top" className="w-full pt-16">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-4">
-                        {hiddenNavItems.map((item) => (
-                          <Link
-                            key={item.path}
-                            to={item.path}
-                            className={cn(
-                              "px-3 py-2 rounded-md text-sm font-medium transition-colors text-center flex flex-col items-center gap-2",
-                              location.pathname === item.path
-                                ? "bg-primary/10 text-primary"
-                                : "text-foreground/60 hover:text-foreground hover:bg-accent"
-                            )}
-                          >
-                            {item.icon || <div className="w-4 h-4" />}
-                            {item.label}
-                          </Link>
-                        ))}
-                      </div>
-                    </SheetContent>
-                    <span>More</span>
-                  </Button>
+                  <SheetTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="px-2.5 py-1.5 h-auto text-foreground/60 hover:text-foreground hover:bg-accent"
+                    >
+                      More
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="top" className="w-full pt-16">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-4">
+                      {hiddenNavItems.map((item) => (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          className={cn(
+                            "px-3 py-2 rounded-md text-sm font-medium transition-colors text-center flex flex-col items-center gap-2",
+                            location.pathname === item.path
+                              ? "bg-primary/10 text-primary"
+                              : "text-foreground/60 hover:text-foreground hover:bg-accent"
+                          )}
+                        >
+                          {item.icon || <div className="w-4 h-4" />}
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </SheetContent>
                 </Sheet>
               </div>
             )}
