@@ -13,7 +13,11 @@ interface ExpenseCategoryBadgeProps {
 
 const ExpenseCategoryBadge = ({ name, color, icon, className, onClick }: ExpenseCategoryBadgeProps) => {
   // Dynamically import icon from Lucide
-  const IconComponent: LucideIcon | null = icon ? (Icons as any)[icon] : null;
+  let IconComponent: LucideIcon | null = null;
+  
+  if (icon && typeof icon === 'string' && icon in Icons) {
+    IconComponent = (Icons as Record<string, LucideIcon>)[icon];
+  }
 
   return (
     <div 
@@ -25,8 +29,8 @@ const ExpenseCategoryBadge = ({ name, color, icon, className, onClick }: Expense
       style={{ backgroundColor: `${color}40`, color: color }}
       onClick={onClick}
     >
-      {IconComponent && <IconComponent className="h-3.5 w-3.5" />}
-      <span>{name}</span>
+      {IconComponent && <IconComponent className="h-3.5 w-3.5 flex-shrink-0" />}
+      <span className="truncate max-w-[120px]">{name}</span>
     </div>
   );
 };

@@ -4,30 +4,24 @@ import {
   Card, 
   CardContent, 
   CardHeader, 
-  CardTitle,
-  CardDescription 
+  CardTitle 
 } from "@/components/ui/card";
 import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
+  Table, 
+  TableHeader, 
+  TableRow, 
+  TableHead, 
+  TableBody, 
+  TableCell 
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { format, parseISO } from "date-fns";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { Trash2, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
-import { 
-  MoreVertical, 
-  Trash2, 
-  Filter, 
-  ChevronDown,
-  Calendar,
-  TrendingUp,
-} from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
+import EmptyState from "@/components/EmptyState";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Investment {
   id: string;
@@ -46,50 +40,49 @@ interface InvestmentsListProps {
 
 const InvestmentsList = ({ refreshTrigger }: InvestmentsListProps) => {
   const [investments, setInvestments] = useState<Investment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<'purchase_date' | 'symbol'>('purchase_date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   useEffect(() => {
     const fetchInvestments = async () => {
       if (!user) return;
-      
+
       try {
-        setIsLoading(true);
-        
+        setLoading(true);
         const { data, error } = await supabase
           .from('investments')
-          .select("*")
-          .order(sortBy, { ascending: sortOrder === 'asc' })
-          .eq("user_id", user.id);
+          .select('*')
+          .order('purchase_date', { ascending: false });
 
         if (error) throw error;
-        
-        setInvestments(data as Investment[] || []);
+
+        setInvestments(data as Investment[]);
       } catch (error) {
         console.error("Error fetching investments:", error);
         toast.error("Failed to load investments");
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
-    if (user) {
-      fetchInvestments();
-    }
-  }, [user, refreshTrigger, sortBy, sortOrder]);
+    fetchInvestments();
+  }, [user, refreshTrigger]);
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteInvestment = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this investment?")) return;
+
     try {
       const { error } = await supabase
         .from('investments')
         .delete()
-        .eq("id", id);
+        .eq('id', id);
 
       if (error) throw error;
+
+      setInvestments(prevInvestments => 
+        prevInvestments.filter(investment => investment.id !== id)
+      );
       
-      setInvestments((prev) => prev.filter((investment) => investment.id !== id));
       toast.success("Investment deleted");
     } catch (error) {
       console.error("Error deleting investment:", error);
@@ -97,34 +90,24 @@ const InvestmentsList = ({ refreshTrigger }: InvestmentsListProps) => {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
+  if (loading) {
+    return (
+      <Card className="w-full h-[400px] flex justify-center items-center">
+        <div className="animate-pulse text-muted-foreground">Loading investments...</div>
+      </Card>
+    );
+  }
 
-  const formatShares = (shares: number) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 4,
-    }).format(shares);
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      return format(parseISO(dateString), "MMM d, yyyy");
-    } catch (e) {
-      return dateString;
-    }
-  };
-
-  if (isLoading) {
+  if (investments.length === 0) {
     return (
       <Card className="w-full">
-        <CardContent className="text-center py-8">
-          Loading investments...
+        <CardContent className="py-6">
+          <EmptyState
+            icon={<Info className="h-8 w-8" />}
+            title="No investments yet"
+            description="Add your first investment to start tracking."
+            className="py-10"
+          />
         </CardContent>
       </Card>
     );
@@ -132,116 +115,54 @@ const InvestmentsList = ({ refreshTrigger }: InvestmentsListProps) => {
 
   return (
     <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <div>
-          <CardTitle className="text-xl">Your Investments</CardTitle>
-          <CardDescription>
-            {investments.length} {investments.length === 1 ? "investment" : "investments"} found
-          </CardDescription>
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4 mr-2" />
-              Sort by
-              <ChevronDown className="h-4 w-4 ml-2" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { setSortBy('purchase_date'); setSortOrder('desc'); }}>
-              <Calendar className="h-4 w-4 mr-2" />
-              Newest first
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { setSortBy('purchase_date'); setSortOrder('asc'); }}>
-              <Calendar className="h-4 w-4 mr-2" />
-              Oldest first
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { setSortBy('symbol'); setSortOrder('asc'); }}>
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Symbol (A-Z)
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <CardHeader>
+        <CardTitle className="text-xl">Your Investments</CardTitle>
       </CardHeader>
       <CardContent>
-        {investments.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">No investments found</p>
-            <p className="text-sm text-muted-foreground">Add your first investment using the form</p>
-          </div>
-        ) : (
-          <ScrollArea className="h-[400px]">
-            <div className="space-y-4">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Symbol</TableHead>
+                <TableHead>Shares</TableHead>
+                <TableHead>Purchase Price</TableHead>
+                <TableHead>Purchase Date</TableHead>
+                <TableHead>Value at Purchase</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {investments.map((investment) => (
-                <div 
-                  key={investment.id} 
-                  className="flex items-center justify-between p-4 rounded-lg bg-background border"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div 
-                      className="w-10 h-10 rounded-md flex items-center justify-center bg-blue-100 text-blue-600"
-                    >
-                      {investment.symbol.slice(0, 2)}
-                    </div>
-                    <div>
-                      <div className="flex items-center">
-                        <Badge 
-                          variant="secondary" 
-                          className="mr-2 font-mono"
-                        >
-                          {investment.symbol}
-                        </Badge>
-                        <span className="font-medium">
-                          {formatShares(investment.shares)} shares
-                        </span>
-                      </div>
-                      <div className="flex items-center mt-1">
-                        <span className="text-sm">
-                          {formatCurrency(investment.purchase_price)} per share
-                        </span>
-                        <span className="text-xs text-muted-foreground mx-2">•</span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDate(investment.purchase_date)}
-                        </span>
-                      </div>
-                      {investment.notes && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {investment.notes}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <div className="text-right mr-4">
-                      <div className="font-medium">
-                        {formatCurrency(investment.shares * investment.purchase_price)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Total investment
-                      </div>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem 
-                          onClick={() => handleDelete(investment.id)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
+                <TableRow key={investment.id}>
+                  <TableCell className="font-medium">{investment.symbol}</TableCell>
+                  <TableCell>{investment.shares}</TableCell>
+                  <TableCell>${investment.purchase_price.toFixed(2)}</TableCell>
+                  <TableCell>{format(new Date(investment.purchase_date), "MMM d, yyyy")}</TableCell>
+                  <TableCell>
+                    ${(investment.shares * investment.purchase_price).toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="destructive" 
+                            size="icon" 
+                            className="h-8 w-8" 
+                            onClick={() => handleDeleteInvestment(investment.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Delete investment</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableCell>
+                </TableRow>
               ))}
-            </div>
-          </ScrollArea>
-        )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );
