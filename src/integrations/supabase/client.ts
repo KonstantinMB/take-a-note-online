@@ -78,6 +78,32 @@ declare module '@supabase/supabase-js' {
             created_at?: string;
           };
         };
+        budget_items: {
+          Row: {
+            id: string;
+            user_id: string;
+            category: string;
+            planned_amount: number;
+            month_year: string;
+            created_at: string;
+          };
+          Insert: {
+            id?: string;
+            user_id: string;
+            category: string;
+            planned_amount: number;
+            month_year: string;
+            created_at?: string;
+          };
+          Update: {
+            id?: string;
+            user_id?: string;
+            category?: string;
+            planned_amount?: number;
+            month_year?: string;
+            created_at?: string;
+          };
+        };
       };
     };
   }

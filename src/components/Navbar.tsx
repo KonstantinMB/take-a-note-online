@@ -1,7 +1,7 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu, X, Wallet } from "lucide-react";
+import { LogOut, Menu, X, Wallet, PieChart } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,7 +18,8 @@ const Navbar = () => {
     { path: "/todo", label: "Todo", requiresAuth: true },
     { path: "/calendar", label: "Calendar", requiresAuth: true },
     { path: "/references", label: "References", requiresAuth: true },
-    { path: "/expenses", label: "Expenses", requiresAuth: true }, // New expenses route
+    { path: "/expenses", label: "Expenses", requiresAuth: true, icon: <Wallet className="h-4 w-4" /> },
+    { path: "/budget", label: "Budget Planner", requiresAuth: true, icon: <PieChart className="h-4 w-4" /> },
   ];
 
   const toggleMenu = () => {
@@ -54,7 +55,7 @@ const Navbar = () => {
                     : "text-foreground/60 hover:text-foreground hover:bg-accent"
                 )}
               >
-                {item.path === "/expenses" && <Wallet className="h-4 w-4" />}
+                {item.icon}
                 {item.label}
               </Link>
             ))}
@@ -113,7 +114,7 @@ const Navbar = () => {
                     )}
                     onClick={closeMenu}
                   >
-                    {item.path === "/expenses" && <Wallet className="h-4 w-4" />}
+                    {item.icon}
                     {item.label}
                   </Link>
                 ))}
