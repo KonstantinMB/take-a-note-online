@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -112,7 +111,6 @@ const CategoriesManager = ({
 
       if (error) throw error;
 
-      // Update local state
       setCategories(prev => prev.map(cat => 
         cat.id === id ? { ...cat, name, color, icon } : cat
       ));
@@ -137,7 +135,7 @@ const CategoriesManager = ({
   };
 
   const handleEditClick = (e: React.MouseEvent, category: Category) => {
-    e.stopPropagation(); // Prevent category selection
+    e.stopPropagation();
     setCategoryToEdit(category);
     setIsEditDialogOpen(true);
   };
@@ -184,28 +182,26 @@ const CategoriesManager = ({
           >
             <div className="flex flex-wrap gap-3 ml-6 my-3 items-center">
               {categories.map(category => (
-                <div key={category.id} className="category-wrapper relative group">
+                <div key={category.id} className="relative group py-1 px-1">
                   <ExpenseCategoryBadge
                     name={category.name}
                     color={category.color}
                     icon={category.icon || undefined}
                     className={cn(
                       selectedCategory === category.id ? "ring-2 ring-black/20" : "",
-                      "relative"
                     )}
                     onClick={() => handleCategoryClick(category)}
                   />
                   
-                  {/* Edit button that appears on hover */}
                   <Button
                     variant="secondary"
                     size="icon"
-                    className="absolute -right-2 -top-2 h-6 w-6 rounded-full 
+                    className="absolute -right-2 -top-2 h-5 w-5 rounded-full 
                               bg-white shadow-sm opacity-0 group-hover:opacity-100 
-                              transition-opacity z-10 border"
+                              transition-opacity z-10 border p-0"
                     onClick={(e) => handleEditClick(e, category)}
                   >
-                    <Pencil className="h-3 w-3" />
+                    <Pencil className="h-2.5 w-2.5" />
                   </Button>
                 </div>
               ))}

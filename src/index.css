@@ -87,7 +87,7 @@
   
   /* Category styling */
   .category-wrapper {
-    @apply flex items-center transition-transform hover:scale-105;
+    @apply relative py-1 px-1 hover:scale-105 transition-transform;
   }
   
   .category-badges-container {

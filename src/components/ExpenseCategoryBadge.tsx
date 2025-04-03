@@ -12,10 +12,10 @@ interface ExpenseCategoryBadgeProps {
 }
 
 const ExpenseCategoryBadge = ({ name, color, icon, className, onClick }: ExpenseCategoryBadgeProps) => {
-  // Use the correct type for Lucide icons
-  const IconComponent = icon ? 
-    (Icons as Record<string, React.FC<LucideProps>>)[icon as string] : 
-    undefined;
+  // Use a more precise type for the dynamic component
+  const IconComponent = icon 
+    ? (Icons as Record<string, React.ComponentType<LucideProps>>)[icon] 
+    : undefined;
 
   return (
     <div 
